@@ -108,8 +108,8 @@ async function applyBossAoE() {
   }
 
   // Clear lastAction after all hits
-  gameState.lastAction = null;
   broadcastState();
+  gameState.lastAction = null;
 }
 
 async function nextTurn() {
@@ -250,12 +250,32 @@ io.on('connection', socket => {
     saveHistory();
     const dmg = Number(gameState.settings.pvpDamage) || DEFAULT_PVP_DAMAGE;
     if (opponentSucceeded) {
-      if (gameState.players[challengerIndex]) gameState.players[challengerIndex].hp = Math.max(0, gameState.players[challengerIndex].hp - dmg);
+      if (gameState.players[challengerIndex]) {
+          gameState.players[challengerIndex].hp = Math.max(0, gameState.players[challengerIndex].hp - dmg);
+          gameState.lastAction = {
+            type: 'attack',
+            attacker: gameState.players[opponentIndex].name,
+            target: gameState.players[challengerIndex].name,
+            damage: dmg,
+            effect: 'slash'
+          };
+        }
     } else {
-      if (gameState.players[opponentIndex]) gameState.players[opponentIndex].hp = Math.max(0, gameState.players[opponentIndex].hp - dmg);
+      if (gameState.players[opponentIndex]) {
+        gameState.players[opponentIndex].hp = Math.max(0, gameState.players[opponentIndex].hp - dmg);
+          gameState.lastAction = {
+            type: 'attack',
+            attacker: gameState.players[challengerIndex].name,
+            target: gameState.players[opponentIndex].name,
+            damage: dmg,
+            effect: 'slash'
+          };
+      }
     }
+
     checkVictory();
     broadcastState();
+    gameState.lastAction = null;
   });
 
   socket.on('action:endTurn', ({ nextTurnIndex } = {}) => {
