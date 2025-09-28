@@ -29,6 +29,7 @@ export function GameProvider({ children }) {
     wrongAnswer: (payload) => socket && socket.emit('action:wrongAnswer', payload),
     pvpResult: (payload) => socket && socket.emit('action:pvpResult', payload),
     endTurn: (payload) => socket && socket.emit('action:endTurn', payload),
+    undo: () => socket && socket.emit('undo'),
   };
 
   return <GameContext.Provider value={api}>{children}</GameContext.Provider>;

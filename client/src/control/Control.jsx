@@ -192,6 +192,7 @@ export default function Control() {
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Other Controls</div>
         <div className="controls">
           <button className="btn" onClick={forceAdvance}>Force Advance Turn</button>
+          <button className="btn" onClick={() => socket.emit('undo')}>Undo</button>
         </div>
       </div>
 
