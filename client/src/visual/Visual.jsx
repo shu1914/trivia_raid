@@ -20,6 +20,7 @@ export default function Visual() {
   const [lastWinner, setLastWinner] = useState(null);
   const [attacks, setAttacks] = useState([]);
   const [shake, setShake] = useState(false);
+  const [bossInvisible, setBossInvisible] = useState(false);
 
   // --- Winner modal logic ---
   useEffect(() => {
@@ -59,6 +60,16 @@ export default function Visual() {
       }, 800);
     }
   }, [st?.lastAction]);
+
+  // boss disappears during bossAoe attacks
+  useEffect(() => {
+    const bossAoEActive = attacks.some((a) => a.effect === "bossAoE");
+    if (bossAoEActive) {
+      setBossInvisible(true);
+      const timer = setTimeout(() => setBossInvisible(false), 250); 
+      return () => clearTimeout(timer);
+    }
+}, [attacks]);
 
   if (!st) return <div className="container">Connecting to server...</div>;
 
@@ -106,11 +117,28 @@ export default function Visual() {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 18 }}>{st.boss.name}</div>
-        <img
+
+        <motion.img
           src="/images/riddlebeast-idle.png"
           alt="Boss"
-          style={{ margin: 8, objectFit: "contain" }}
+          style={{
+            margin: 8,
+            objectFit: "contain",
+            position: "relative",
+            zIndex: 500,
+          }}
+          animate={{
+            y: attacks.some((a) => a.effect === "bossAoE") ? 400 : 0,
+            scale: attacks.some((a) => a.effect === "bossAoE") ? 2 : 1,
+            opacity: bossInvisible ? 0 : 1,
+          }}
+          transition={{
+            y: { duration: 0.05, ease: "easeInOut" },
+            scale: { duration: 0.05, ease: "easeInOut" },
+            opacity: { duration: 0.05, ease: "easeInOut" },
+          }}
         />
+
         <div className="hpbar" style={{ width: "80%", height: 16, marginBottom: 8 }}>
           <motion.div
             className="hpfill"
