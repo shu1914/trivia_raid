@@ -26,7 +26,8 @@ let gameState = {
   currentPlayerIndex: 0,
   round: 1,
   settings: { bossAoE: DEFAULT_BOSS_AOE, pvpDamage: DEFAULT_PVP_DAMAGE },
-  winner: null
+  winner: null,
+  lastAction: null // <-- add this
 };
 
 let gameHistory = [];
@@ -76,15 +77,39 @@ function initGame(payload = {}) {
   gameState.winner = null;
 }
 
-function applyBossAoE() {
-  const dmg = Number(gameState.settings.bossAoE) || DEFAULT_BOSS_AOE;
-  gameState.players.forEach(p => {
-    if (p.hp > 0) p.hp = Math.max(0, p.hp - dmg);
-  });
-  io.emit('bossAttack', { damage: dmg, players: gameState.players });
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function nextTurn() {
+async function applyBossAoE() {
+  const dmg = Number(gameState.settings.bossAoE) || DEFAULT_BOSS_AOE;
+
+  for (const p of gameState.players) {
+    if (p.hp <= 0) continue;
+
+    saveHistory();
+
+    p.hp = Math.max(0, p.hp - dmg);
+
+    gameState.lastAction = {
+      type: 'attack',
+      attacker: gameState.boss.name,
+      target: p.name,
+      damage: dmg,
+      effect: 'bossAoE'
+    };
+    broadcastState();
+
+    // Wait so client can see the animation
+    await delay(600);  
+  }
+
+  // Clear lastAction after all hits
+  gameState.lastAction = null;
+  broadcastState();
+}
+
+async function nextTurn() {
   let found = false;
   let attempts = 0;
 
@@ -92,7 +117,7 @@ function nextTurn() {
     gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
 
     if (gameState.currentPlayerIndex === 0) {
-      applyBossAoE();
+      await applyBossAoE(); // <- must await
       gameState.round++;
     }
 
@@ -139,6 +164,14 @@ function _handlePlayerAction({ playerId, action, value, target }) {
       const dmg = Number(value) || 0;
       gameState.boss.hp = Math.max(0, gameState.boss.hp - dmg);
       actingPlayer.damageDealt = (actingPlayer.damageDealt || 0) + dmg;
+
+      gameState.lastAction = {
+        type: 'attack',
+        attacker: actingPlayer.name,
+        target: gameState.boss.name,
+        damage: dmg,
+        effect: 'slash'
+      };
       break;
     }
     case 'attackPlayer': {
@@ -147,12 +180,28 @@ function _handlePlayerAction({ playerId, action, value, target }) {
       if (gameState.players[t].hp <= 0) return { ok: false, reason: 'target-dead' };
       const dmg = Number(value) || 0;
       gameState.players[t].hp = Math.max(0, gameState.players[t].hp - dmg);
+
+      gameState.lastAction = {
+        type: 'attack',
+        attacker: actingPlayer.name,
+        target: gameState.players[t].name,
+        damage: dmg,
+        effect: 'slash'
+      };
       break;
     }
     case 'selfDamage':
     case 'wrongAnswer': {
       const dmg = Math.ceil((Number(value) || 0) / 2);
       actingPlayer.hp = Math.max(0, actingPlayer.hp - dmg);
+
+      gameState.lastAction = {
+        type: 'attack',
+        attacker: actingPlayer.name,
+        target: actingPlayer.name,
+        damage: dmg,
+        effect: 'self'
+      };
       break;
     }
     default: return { ok: false, reason: 'unknown-action' };
@@ -161,6 +210,7 @@ function _handlePlayerAction({ playerId, action, value, target }) {
   nextTurn();
   checkVictory();
   broadcastState();
+  gameState.lastAction = null;
   return { ok: true };
 }
 
