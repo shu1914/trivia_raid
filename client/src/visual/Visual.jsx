@@ -144,7 +144,7 @@ export default function Visual() {
           }}
         >
           <img
-            src={p.avatar || "/default-avatar.png"} // placeholder icon
+            src={p.avatar || "/images/default-avatar.png"} // placeholder icon
             alt={p.name}
             style={{ width: 48, height: 48, borderRadius: "50%", marginBottom: 4 }}
           />
@@ -218,79 +218,78 @@ export default function Visual() {
         {attacks.map((atk) => {
           const attackerPos = getAttackerPosition(atk.attackerName);
           const targetPos = getTargetPosition(atk.targetName);
+
+          const targetEl = document.getElementById(`target-${atk.targetName}`);
+
           return (
-            <motion.div
-              key={atk.id}
-              initial={{ x: attackerPos.x, y: attackerPos.y, opacity: 1 }}
-              animate={{ x: targetPos.x, y: targetPos.y, opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
-              style={{ position: "fixed", pointerEvents: "none" }}
-            >
-              {atk.effect === "slash" && (
-                <div
+            <React.Fragment key={atk.id}>
+              {/* Slash / Fireball / Boss AoE projectile */}
+              {atk.effect === "slash" || atk.effect === "fireball" ? (
+                <motion.div
+                  initial={{ x: attackerPos.x, y: attackerPos.y, opacity: 1 }}
+                  animate={{ x: targetPos.x, y: targetPos.y, opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6 }}
+                  style={{ position: "fixed", pointerEvents: "none", zIndex: 1000 }}
+                >
+                  <div
+                    style={{
+                      width: atk.effect === "slash" ? 80 : 24,
+                      height: atk.effect === "slash" ? 12 : 24,
+                      borderRadius: atk.effect === "slash" ? 6 : "50%",
+                      background:
+                        atk.effect === "slash"
+                          ? "linear-gradient(90deg, red, yellow)"
+                          : "orange",
+                      filter: atk.effect === "slash" ? "blur(4px)" : "none",
+                      boxShadow: atk.effect === "fireball" ? "0 0 12px orange, 0 0 24px red" : "",
+                    }}
+                  />
+                </motion.div>
+              ) : null}
+
+              {/* Boss AoE effect */}
+              {atk.effect === "bossAoE" && targetEl && (
+                <motion.img
+                  src="/images/riddlebeast-idle.png"
+                  alt="Boss AoE"
                   style={{
-                    width: 80,
-                    height: 12,
-                    background: "linear-gradient(90deg, red, yellow)",
-                    borderRadius: 6,
-                    filter: "blur(4px)",
-                    position: "absolute",
+                    position: "fixed",
+                    width: 100,
+                    height: 100,
+                    left: targetPos.x,
+                    top: targetPos.y,
+                    transform: "translate(-50%, -50%)",
                     zIndex: 1000,
                   }}
-                />
-              )}
-              {atk.effect === "fireball" && (
-                <div
-                  style={{
-                    width: 24,
-                    height: 24,
-                    background: "orange",
-                    borderRadius: "50%",
-                    boxShadow: "0 0 12px orange, 0 0 24px red",
+                  initial={{ scale: 1, rotate: 0, opacity: 1 }}
+                  animate={{
+                    scale: [1, 1.4, 1.2],
+                    rotate: [0, 10, -10, 0],
+                    opacity: [1, 0.8, 1],
                   }}
+                  transition={{ duration: 0.8 }}
                 />
               )}
-              {atk.effect === "bossAoE" && (
-                <motion.div
-                  style={{
-                    width: 200,
-                    height: 200,
-                    borderRadius: "50%",
-                    background: "rgba(255,0,0,0.4)",
-                    boxShadow: "0 0 32px red, 0 0 64px orange",
-                    position: "fixed",
-                    zIndex: 500,
-                    top: (() => {
-                      const el = document.getElementById(`target-${st.boss.name}`);
-                      return el ? el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2 : window.innerHeight / 4;
-                    })(),
-                    left: (() => {
-                      const el = document.getElementById(`target-${st.boss.name}`);
-                      return el ? el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2 : window.innerWidth / 4;
-                    })(),
-                    transform: "translate(-50%, -50%)",
-                  }}
-                  initial={{ scale: 0, opacity: 1 }}
-                  animate={{ scale: 2.5, opacity: 0 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                />
-              )}
+
+              {/* Damage numbers */}
               <motion.div
                 style={{
                   position: "absolute",
-                  top: -20,
-                  left: 0,
+                  top: targetPos.y - 20,
+                  left: targetPos.x - 10,
                   fontWeight: "bold",
                   color: "white",
                   textShadow: "0 0 8px red",
+                  pointerEvents: "none",
+                  zIndex: 1100,
                 }}
-                animate={{ y: -40, opacity: 0 }}
+                animate={{ y: targetPos.y - 60, opacity: 0 }}
                 transition={{ duration: 0.6 }}
               >
                 -{atk.damage}
               </motion.div>
-            </motion.div>
+            </React.Fragment>
           );
         })}
       </AnimatePresence>

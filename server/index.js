@@ -184,6 +184,7 @@ function _handlePlayerAction({ playerId, action, value, target }) {
       const dmg = Number(value) || 0;
       gameState.players[t].hp = Math.max(0, gameState.players[t].hp - dmg);
 
+      actingPlayer.damageDealt = (actingPlayer.damageDealt || 0) + (dmg/2);
       gameState.lastAction = {
         type: 'attack',
         attacker: actingPlayer.name,
