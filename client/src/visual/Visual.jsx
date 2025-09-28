@@ -12,6 +12,10 @@ const TEAM_COLORS = {
   "Team E": "#f10fdeff",
 };
 
+const slashAudio = new Audio("/sfx/player-attack.mp3");
+const bossAoEAudio = new Audio("/sfx/riddlebeast-claw-attack.mp3");
+const bossRoarAudio = new Audio("/sfx/riddlebeast-roar.mp3");
+
 export default function Visual() {
   const g = useGame();
   const st = g.state;
@@ -21,6 +25,7 @@ export default function Visual() {
   const [attacks, setAttacks] = useState([]);
   const [shake, setShake] = useState(false);
   const [bossInvisible, setBossInvisible] = useState(false);
+  const [bossRoared, setBossRoared] = useState(false);
 
   // --- Winner modal logic ---
   useEffect(() => {
@@ -40,6 +45,14 @@ export default function Visual() {
     if (st.lastAction && st.lastAction.type === "attack") {
       const action = st.lastAction;
       const id = Date.now();
+
+      if (action.effect === "bossAoE") {
+        bossAoEAudio.currentTime = 0;
+        bossAoEAudio.play();
+      } else {
+        slashAudio.currentTime = 0;
+        slashAudio.play();
+      }
 
       setAttacks((prev) => [
         ...prev,
@@ -69,7 +82,41 @@ export default function Visual() {
       const timer = setTimeout(() => setBossInvisible(false), 250); 
       return () => clearTimeout(timer);
     }
-}, [attacks]);
+  }, [attacks]);
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      slashAudio.play().catch(() => {});
+      slashAudio.pause();
+      slashAudio.currentTime = 0;
+
+      bossAoEAudio.play().catch(() => {});
+      bossAoEAudio.pause();
+      bossAoEAudio.currentTime = 0;
+
+      window.removeEventListener("click", unlockAudio);
+    };
+    window.addEventListener("click", unlockAudio);
+  }, []);
+
+  useEffect(() => {
+    const bossAoEActive = attacks.some((a) => a.effect === "bossAoE");
+    if (bossAoEActive) {
+      // Play roar once at the start of AoE
+      if (!bossRoared) {
+        bossRoarAudio.currentTime = 0;
+        bossRoarAudio.play().catch(() => {});
+        setBossRoared(true);
+      }
+
+      setBossInvisible(true);
+      const timer = setTimeout(() => setBossInvisible(false), 250); 
+      return () => clearTimeout(timer);
+    } else {
+      // Reset roar state when no AoE is active
+      setBossRoared(false);
+    }
+  }, [attacks, bossRoared]);
 
   if (!st) return <div className="container">Connecting to server...</div>;
 
