@@ -397,35 +397,100 @@ export default function Visual() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0,0,0,0.6)",
+            background: "rgba(0,0,0,0.7)",
+            backdropFilter: "blur(4px)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            zIndex: 1000,
+            zIndex: 2000,
           }}
           onClick={() => setShowWinnerModal(false)}
         >
-          <div
+          <motion.div
             className="modal-content"
             style={{
-              background: "white",
-              padding: 24,
-              borderRadius: 8,
-              minWidth: 300,
+              background: "linear-gradient(135deg, #f9d423, #ff4e50)",
+              padding: 32,
+              borderRadius: 16,
+              minWidth: 350,
               textAlign: "center",
+              boxShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
+              border: "2px solid gold",
+              position: "relative",
+              overflow: "hidden",
             }}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2>🎉 Winner 🎉</h2>
-            <p style={{ fontWeight: 700, fontSize: 20 }}>{st.winner}</p>
-            <button
+            {/* Confetti circles */}
+            {Array.from({ length: 30 }).map((_, i) => (
+              <motion.div
+                key={i}
+                style={{
+                  position: "absolute",
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: ["#fff", "#ffd700", "#ff4500"][i % 3],
+                  top: Math.random() * 100 + "%",
+                  left: Math.random() * 100 + "%",
+                }}
+                animate={{ y: [0, 300], opacity: [1, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: Math.random() }}
+              />
+            ))}
+
+            <h2 style={{
+              fontSize: 32,
+              fontWeight: "900",
+              color: "#fff",
+              textShadow: "0 0 10px #fff, 0 0 20px gold, 0 0 30px orange",
+            }}>Winner</h2>
+
+            <p style={{
+              fontWeight: 900,
+              fontSize: 28,
+              margin: "12px 0",
+              color: "#fff",
+              textShadow: "0 0 8px #fff, 0 0 12px #ff0, 0 0 16px #f00",
+            }}>
+              {st.winner}
+            </p>
+
+            <p style={{
+              fontStyle: "italic",
+              fontWeight: 700,
+              fontSize: 16,
+              color: "#fff",
+              marginBottom: 16,
+              textShadow: "0 0 6px #000",
+            }}>
+              You deserved this victory!
+            </p>
+
+            <motion.button
               className="btn"
-              style={{ marginTop: 12 }}
+              style={{
+                marginTop: 8,
+                padding: "8px 20px",
+                fontWeight: 700,
+                fontSize: 16,
+                borderRadius: 8,
+                border: "none",
+                cursor: "pointer",
+                background: "#fff",
+                color: "#ff4e50",
+                boxShadow: "0 0 10px rgba(255, 0, 0, 0.5)",
+              }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowWinnerModal(false)}
             >
               Close
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </div>
       )}
     </div>

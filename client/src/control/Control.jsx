@@ -1,6 +1,7 @@
 // client/src/control/Control.jsx
 import React, { useState, useMemo } from 'react';
 import { useGame } from '../state/GameContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Control() {
   const g = useGame();
@@ -72,12 +73,34 @@ export default function Control() {
 
   return (
     <div className="container">
-      {/* Winner! */}
-      {st?.winner && (
-        <div className="card" style={{ marginTop: 12, background: '#e8ffe8', border: '1px solid #4caf50' }}>
-          <h3 style={{ margin: 0 }}>🎉 Winner: {st.winner} 🎉</h3>
-        </div>
-      )}
+      {/* Winner notification */}
+      <AnimatePresence>
+        {st?.winner && (
+          <motion.div
+            key="winner-notification"
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            style={{
+              marginTop: 12,
+              background: "linear-gradient(135deg, #d4edda, #c3e6cb)",
+              border: "1px solid #28a745",
+              borderRadius: 8,
+              padding: 16,
+              boxShadow: "0 0 10px rgba(40, 167, 69, 0.5)",
+              color: "#155724",
+              fontWeight: 700,
+              textAlign: "center",
+            }}
+          >
+            Winner Alert: <span style={{ fontSize: 18, fontWeight: 900 }}>{st.winner}</span>
+            <div style={{ fontSize: 14, fontStyle: "italic", marginTop: 4 }}>
+              Notify players: {st.winner} won this round!
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Game init */}
       <div className="card">
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Game Init</div>
