@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "install-all": "(cd client && npm install) && (cd server && npm install)",
-    "dev": "concurrently \"node server/index.js\" \"cd client && npm run dev\"",
+    "dev": "concurrently \"node server/index.js\" \"cd client && npm run dev -- --host 0.0.0.0\"",
     "start-server": "node server/index.js",
     "client": "cd client && npm run dev"
   },
