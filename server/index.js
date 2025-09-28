@@ -118,15 +118,17 @@ async function nextTurn() {
   while (!found && attempts < gameState.players.length) {
     gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
 
-    if (gameState.currentPlayerIndex === 0) {
-      await applyBossAoE(); // <- must await
-      gameState.round++;
-    }
-
     const current = gameState.players[gameState.currentPlayerIndex];
     if (current && current.hp > 0) found = true;
 
     attempts++;
+  }
+
+  // Only apply AoE after the turn has fully advanced, with a short delay
+  if (gameState.currentPlayerIndex === 0) {
+    await delay(300); // give last player attack time to animate
+    await applyBossAoE();
+    gameState.round++;
   }
 }
 
@@ -160,6 +162,7 @@ async function _handlePlayerAction({ playerId, action, value, target }) {
   if (!actingPlayer || actingPlayer.hp <= 0) return { ok: false, reason: 'player-dead' };
 
   saveHistory(); // save BEFORE state changes
+  let lastActionObj = null;
 
   switch (action) {
     case 'attackBoss': {
@@ -167,7 +170,7 @@ async function _handlePlayerAction({ playerId, action, value, target }) {
       gameState.boss.hp = Math.max(0, gameState.boss.hp - dmg);
       actingPlayer.damageDealt = (actingPlayer.damageDealt || 0) + dmg;
 
-      gameState.lastAction = {
+      lastActionObj = {
         type: 'attack',
         attacker: actingPlayer.name,
         target: gameState.boss.name,
@@ -184,7 +187,8 @@ async function _handlePlayerAction({ playerId, action, value, target }) {
       gameState.players[t].hp = Math.max(0, gameState.players[t].hp - dmg);
 
       actingPlayer.damageDealt = (actingPlayer.damageDealt || 0) + (dmg/2);
-      gameState.lastAction = {
+
+      lastActionObj = {
         type: 'attack',
         attacker: actingPlayer.name,
         target: gameState.players[t].name,
@@ -198,7 +202,7 @@ async function _handlePlayerAction({ playerId, action, value, target }) {
       const dmg = Math.ceil((Number(value) || 0) / 2);
       actingPlayer.hp = Math.max(0, actingPlayer.hp - dmg);
 
-      gameState.lastAction = {
+      lastActionObj = {
         type: 'attack',
         attacker: actingPlayer.name,
         target: actingPlayer.name,
@@ -210,10 +214,18 @@ async function _handlePlayerAction({ playerId, action, value, target }) {
     default: return { ok: false, reason: 'unknown-action' };
   }
 
+  gameState.lastAction = lastActionObj;
+  broadcastState();
+
+  await delay(350);
+
+  gameState.lastAction = null;
+  broadcastState();
+
   await nextTurn();
   checkVictory();
   broadcastState();
-  gameState.lastAction = null;
+
   return { ok: true };
 }
 
