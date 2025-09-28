@@ -153,7 +153,7 @@ function checkVictory() {
 // ----------------------
 // Action Processing
 // ----------------------
-function _handlePlayerAction({ playerId, action, value, target }) {
+async function _handlePlayerAction({ playerId, action, value, target }) {
   const current = gameState.currentPlayerIndex;
   if (playerId !== current) return { ok: false, reason: 'not-your-turn', expected: current };
 
@@ -211,7 +211,7 @@ function _handlePlayerAction({ playerId, action, value, target }) {
     default: return { ok: false, reason: 'unknown-action' };
   }
 
-  nextTurn();
+  await nextTurn();
   checkVictory();
   broadcastState();
   gameState.lastAction = null;

@@ -285,7 +285,7 @@ export default function Visual() {
                   zIndex: 1100,
                 }}
                 animate={{ y: targetPos.y - 60, opacity: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 2 }}
               >
                 -{atk.damage}
               </motion.div>
