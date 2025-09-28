@@ -105,11 +105,10 @@ async function applyBossAoE() {
 
     // Wait so client can see the animation
     await delay(600);  
-  }
 
-  // Clear lastAction after all hits
-  broadcastState();
-  gameState.lastAction = null;
+    gameState.lastAction = null;
+    broadcastState();
+  }
 }
 
 async function nextTurn() {
