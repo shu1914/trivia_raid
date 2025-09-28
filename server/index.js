@@ -124,6 +124,11 @@ async function nextTurn() {
     attempts++;
   }
 
+  // Check victory before boss AoE
+  if (gameState.boss.hp <= 0 || gameState.winner) {
+    return; // Boss is dead or winner is already decided → skip AoE
+  }
+
   // Only apply AoE after the turn has fully advanced, with a short delay
   if (gameState.currentPlayerIndex === 0) {
     await delay(300); // give last player attack time to animate
@@ -221,6 +226,8 @@ async function _handlePlayerAction({ playerId, action, value, target }) {
 
   gameState.lastAction = null;
   broadcastState();
+
+  checkVictory();
 
   await nextTurn();
   checkVictory();
