@@ -3,6 +3,15 @@ import React, { useEffect, useState } from "react";
 import { useGame } from "../state/GameContext";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Example team colors
+const TEAM_COLORS = {
+  "Team A": "#e74c3c",
+  "Team B": "#3498db",
+  "Team C": "#2ecc71",
+  "Team D": "#f1c40f",
+  "Team E": "#f10fdeff",
+};
+
 export default function Visual() {
   const g = useGame();
   const st = g.state;
@@ -31,7 +40,6 @@ export default function Visual() {
       const action = st.lastAction;
       const id = Date.now();
 
-      // Add new attack animation
       setAttacks((prev) => [
         ...prev,
         {
@@ -43,11 +51,9 @@ export default function Visual() {
         },
       ]);
 
-      // Trigger screen shake
       setShake(true);
       setTimeout(() => setShake(false), 200);
 
-      // Remove after animation
       setTimeout(() => {
         setAttacks((prev) => prev.filter((a) => a.id !== id));
       }, 800);
@@ -70,12 +76,8 @@ export default function Visual() {
   const getAttackerPosition = (name) => {
     const el = document.getElementById(`target-${name}`);
     if (!el) return { x: 50, y: window.innerHeight - 50 };
-
     const rect = el.getBoundingClientRect();
-    return {
-      x: rect.left + rect.width / 2,
-      y: rect.top - 10 // move 10px above the bar
-    };
+    return { x: rect.left + rect.width / 2, y: rect.top - 10 };
   };
 
   return (
@@ -84,90 +86,131 @@ export default function Visual() {
       style={{
         position: "relative",
         overflow: "hidden",
+        width: "100%",
+        minHeight: "100vh",
+        padding: 12,
         transform: shake ? "translateX(-5px)" : "translateX(0)",
         transition: "transform 0.05s",
       }}
     >
-      {/* Board */}
-      <div className="board">
-        {/* Boss */}
-        <div className="card" style={{ flex: 1 }}>
-          <div
-            className="boss"
-            id={`target-${st.boss.name}`}
-            style={{ position: "relative" }}
-          >
-            {st.boss.name} — HP: {st.boss.hp}/{st.boss.maxHp}
-          </div>
-          <div className="hpbar">
-            <motion.div
-              className="hpfill"
-              style={{ width: (st.boss.hp / st.boss.maxHp) * 100 + "%" }}
-              transition={{ duration: 0.5 }}
-              animate={{
-                backgroundColor: attacks.some((a) => a.targetName === st.boss.name)
-                  ? ["#f00", "#ff0", "#f00"]
-                  : "#0f0",
-              }}
-            />
-          </div>
+      {/* Boss HP and Image */}
+      <div
+        className="boss-card"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          marginBottom: 24,
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 18 }}>{st.boss.name}</div>
+        <img
+          src="/images/riddlebeast-idle.png"
+          alt="Boss"
+          style={{ margin: 8, objectFit: "contain" }}
+        />
+        <div className="hpbar" style={{ width: "80%", height: 16, marginBottom: 8 }}>
+          <motion.div
+            className="hpfill"
+            style={{ width: (st.boss.hp / st.boss.maxHp) * 100 + "%" }}
+            transition={{ duration: 0.5 }}
+            animate={{
+              backgroundColor: attacks.some((a) => a.targetName === st.boss.name)
+                ? ["#f00", "#ff0", "#f00"]
+                : "#e74c3c",
+            }}
+          />
         </div>
-
-        {/* Players */}
-        <div className="card" style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>
-            Players (Round {st.round})
-          </div>
-          {st.players.map((p, idx) => (
-            <div key={idx} className="player-row">
-              <div style={{ width: 140 }}>
-                <div style={{ fontWeight: 700 }}>{p.name}</div>
-                <div
-                  className="hpbar"
-                  id={`target-${p.name}`}
-                  style={{ position: "relative" }}
-                >
-                  <motion.div
-                    className="hpfill"
-                    style={{ width: (p.hp / p.maxHp) * 100 + "%" }}
-                    transition={{ duration: 0.5 }}
-                    animate={{
-                      backgroundColor: attacks.some((a) => a.targetName === p.name)
-                        ? ["#f00", "#ff0", "#f00"]
-                        : "#0f0",
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="muted">
-                HP: {p.hp}/{p.maxHp}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Turn */}
-        <div className="card" style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Turn</div>
-          <div>
-            {st.players[st.currentPlayerIndex]
-              ? st.players[st.currentPlayerIndex].name
-              : "—"}
-          </div>
+        <div className="muted">
+          HP: {st.boss.hp}/{st.boss.maxHp}
         </div>
       </div>
 
-      {/* Leaderboard */}
-      <div className="card" style={{ marginTop: 12 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8 }}>Leaderboard</div>
-        {leaderboard.map((p, i) => (
-          <div key={p.index} className="player-row">
-            <div style={{ fontWeight: 700 }}>
-              #{i + 1} {p.name}
-            </div>
-            <div className="muted">Damage Dealt: {p.damageDealt || 0}</div>
+      {/* Players HP Bars (near POV) */}
+      <div className="players-row" style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
+      {st.players.map((p, idx) => (
+        <div
+          key={idx}
+          className="player-card"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: 120,
+            padding: 8,
+            borderRadius: 8,
+            background: "#222",
+            color: "#fff",
+          }}
+        >
+          <img
+            src={p.avatar || "/default-avatar.png"} // placeholder icon
+            alt={p.name}
+            style={{ width: 48, height: 48, borderRadius: "50%", marginBottom: 4 }}
+          />
+          <div
+            style={{
+              fontWeight: 700,
+              color: TEAM_COLORS[p.team] || "#fff", // <-- applies team color
+            }}
+          >
+            {p.name}
           </div>
-        ))}
+          <div className="hpbar" id={`target-${p.name}`} style={{ width: "100%", height: 12, marginTop: 4 }}>
+            <motion.div
+              className="hpfill"
+              style={{ width: (p.hp / p.maxHp) * 100 + "%" }}
+              transition={{ duration: 0.5 }}
+              animate={{
+                backgroundColor: attacks.some((a) => a.targetName === p.name)
+                  ? ["#f00", "#ff0", "#f00"]
+                  : "#2ecc71",
+              }}
+            />
+          </div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            HP: {p.hp}/{p.maxHp}
+          </div>
+        </div>
+      ))}
+
+      </div>
+
+      {/* Turn Info */}
+      <div style={{ marginTop: 24, textAlign: "center", fontWeight: 700 }}>
+        Turn:{" "}
+        {st.players[st.currentPlayerIndex]
+          ? st.players[st.currentPlayerIndex].name
+          : "—"}
+      </div>
+
+      {/* Leaderboard */}
+      <div className="card" style={{ marginTop: 24 }}>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>Leaderboard</div>
+        <AnimatePresence>
+          {leaderboard.map((p, i) => (
+            <motion.div
+              key={p.index}
+              layout
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="player-row"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: 4,
+                fontWeight: 700,
+                color: TEAM_COLORS[p.team] || "#fff", // <-- applies team color
+              }}
+            >
+              <div>
+                #{i + 1} {p.name}
+              </div>
+              <div className="muted">Damage: {p.damageDealt || 0}</div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
       {/* Attack Animations */}
@@ -184,7 +227,6 @@ export default function Visual() {
               transition={{ duration: 0.6 }}
               style={{ position: "fixed", pointerEvents: "none" }}
             >
-              {/* Slash graphic */}
               {atk.effect === "slash" && (
                 <div
                   style={{
@@ -192,14 +234,12 @@ export default function Visual() {
                     height: 12,
                     background: "linear-gradient(90deg, red, yellow)",
                     borderRadius: 6,
-                    filter: "blur(4px)", // make it more visible
-                    position: "absolute", // ensure it’s not clipped
-                    zIndex: 1000
+                    filter: "blur(4px)",
+                    position: "absolute",
+                    zIndex: 1000,
                   }}
                 />
               )}
-
-              {/* Fireball projectile */}
               {atk.effect === "fireball" && (
                 <div
                   style={{
@@ -211,8 +251,6 @@ export default function Visual() {
                   }}
                 />
               )}
-
-              {/* Boss AoE effect */}
               {atk.effect === "bossAoE" && (
                 <motion.div
                   style={{
@@ -223,7 +261,6 @@ export default function Visual() {
                     boxShadow: "0 0 32px red, 0 0 64px orange",
                     position: "fixed",
                     zIndex: 500,
-                    // position on boss
                     top: (() => {
                       const el = document.getElementById(`target-${st.boss.name}`);
                       return el ? el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2 : window.innerHeight / 4;
@@ -232,15 +269,13 @@ export default function Visual() {
                       const el = document.getElementById(`target-${st.boss.name}`);
                       return el ? el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2 : window.innerWidth / 4;
                     })(),
-                    transform: "translate(-50%, -50%)"
+                    transform: "translate(-50%, -50%)",
                   }}
                   initial={{ scale: 0, opacity: 1 }}
                   animate={{ scale: 2.5, opacity: 0 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 />
               )}
-
-              {/* Damage numbers */}
               <motion.div
                 style={{
                   position: "absolute",

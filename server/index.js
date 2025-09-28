@@ -59,12 +59,15 @@ function broadcastState() {
 function initGame(payload = {}) {
   saveHistory();
 
+  const TEAM_NAMES = ["Team A", "Team B", "Team C", "Team D", "Team E"];
+
   const players = (payload.players || []).map((p, i) => ({
     id: i,
     name: p.name || `Player ${i}`,
     hp: DEFAULT_PLAYER_HP,
     maxHp: DEFAULT_PLAYER_HP,
-    damageDealt: 0
+    damageDealt: 0,
+    team: TEAM_NAMES[i % TEAM_NAMES.length] // <-- assign team here
   }));
 
   const bossHp = Number(payload.bossHp) || Math.max(75, 15 * Math.max(1, players.length));
