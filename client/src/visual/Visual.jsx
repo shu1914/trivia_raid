@@ -15,6 +15,25 @@ const TEAM_COLORS = {
 const slashAudio = new Audio("/sfx/player-attack.mp3");
 const bossAoEAudio = new Audio("/sfx/riddlebeast-claw-attack.mp3");
 const bossRoarAudio = new Audio("/sfx/riddlebeast-roar.mp3");
+const bgmAudio = new Audio("/bgm/boss-okay-bgm.mp3");
+const bossLowHpAudio = new Audio("/bgm/boss-near-death.mp3");
+const victoryAudio = new Audio("/bgm/player-victory.mp3");
+victoryAudio.loop = false;
+victoryAudio.volume = 0;
+
+const fadeAudio = (audio, toVolume = 1, duration = 1000) => {
+  if (!audio) return;
+  const steps = 20;
+  const stepTime = duration / steps;
+  const volumeStep = (toVolume - audio.volume) / steps;
+  let currentStep = 0;
+
+  const fadeInterval = setInterval(() => {
+    currentStep++;
+    audio.volume = Math.min(Math.max(audio.volume + volumeStep, 0), 1);
+    if (currentStep >= steps) clearInterval(fadeInterval);
+  }, stepTime);
+};
 
 export default function Visual() {
   const g = useGame();
@@ -26,6 +45,8 @@ export default function Visual() {
   const [shake, setShake] = useState(false);
   const [bossInvisible, setBossInvisible] = useState(false);
   const [bossRoared, setBossRoared] = useState(false);
+  const [intenseBgmStarted, setIntenseBgmStarted] = useState(false);
+  const [victoryBgmStarted, setVictoryBgmStarted] = useState(false);
 
   // --- Winner modal logic ---
   useEffect(() => {
@@ -117,6 +138,50 @@ export default function Visual() {
       setBossRoared(false);
     }
   }, [attacks, bossRoared]);
+
+  useEffect(() => {
+    bgmAudio.loop = true;
+    bossLowHpAudio.loop = true;
+    const playBGM = () => {
+      bgmAudio.play().catch(() => {});
+      window.removeEventListener("click", playBGM);
+    };
+
+    // Some browsers block autoplay, so unlock with user interaction
+    window.addEventListener("click", playBGM);
+
+    return () => {
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+      window.removeEventListener("click", playBGM);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!st?.boss) return;
+
+    const bossHpPercent = st.boss.hp / st.boss.maxHp;
+
+    // Switch to intense BGM below 50%
+    if (bossHpPercent <= 0.5 && !intenseBgmStarted) {
+      setIntenseBgmStarted(true);
+      fadeAudio(bgmAudio, 0, 1000);
+      bossLowHpAudio.currentTime = 0;
+      bossLowHpAudio.play().catch(() => {});
+      fadeAudio(bossLowHpAudio, 1, 1000);
+    }
+
+    // Boss defeated → victory music
+    if (st.boss.hp <= 0 && !victoryBgmStarted) {
+      setVictoryBgmStarted(true);
+      fadeAudio(bgmAudio, 0, 500);
+      fadeAudio(bossLowHpAudio, 0, 500);
+
+      victoryAudio.currentTime = 0;
+      victoryAudio.play().catch(() => {});
+      fadeAudio(victoryAudio, 1, 1000);
+    }
+  }, [st?.boss?.hp, intenseBgmStarted, victoryBgmStarted]);
 
   if (!st) return <div className="container">Connecting to server...</div>;
 
