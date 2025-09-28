@@ -1,0 +1,14 @@
+{
+  "name": "trivia-raid-full",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install-all": "(cd client && npm install) && (cd server && npm install)",
+    "dev": "concurrently \"node server/index.js\" \"cd client && npm run dev\"",
+    "start-server": "node server/index.js",
+    "client": "cd client && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

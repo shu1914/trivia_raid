@@ -1,0 +1,14 @@
+body { font-family: Inter, Arial, sans-serif; margin:0; padding:0; background:#0b1020; color:#e6eef8; }
+.topbar { display:flex; gap:12px; padding:12px; background:#071028; }
+a { color:#7dd3fc; text-decoration:none; }
+.container { padding:16px; }
+.board { display:flex; gap:16px; align-items:flex-start; padding:16px; }
+.card { background:#071832; padding:12px; border-radius:8px; min-width:220px; }
+.hpbar { height:18px; background:#1a2a3a; border-radius:8px; overflow:hidden; }
+.hpfill { height:100%; background:#22c55e; width:100%; transition: width 400ms ease; }
+.boss { font-size:20px; font-weight:700; margin-bottom:8px; }
+.player-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.controls { display:flex; gap:8px; flex-direction:column; }
+.btn { background:#0ea5e9; color:#042a2b; padding:8px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:700; }
+.small { font-size:12px; padding:6px 8px; }
+.muted { color:#9fb1c8; }
