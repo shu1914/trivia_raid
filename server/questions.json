@@ -112,32 +112,226 @@
     ]
   },
   "General Trivia": {
+    "2": [
+      {
+        "question": "What is the capital city of Canada?",
+        "options": [
+          "Toronto", 
+          "Vancouver", 
+          "Ottawa", 
+          "Montreal"
+        ],
+        "answer": "Ottawa"
+      },
+      {
+        "question": "Which element has the chemical symbol “Ag”?",
+        "options": [
+          "Argon", 
+          "Gold", 
+          "Silver", 
+          "Copper"
+        ],
+        "answer": "Silver"
+      },
+      {
+        "question": "Who wrote the play “King Lear”",
+        "options": [
+          "Charles Dickens", 
+          "William Shakespeare", 
+          "Jane Austen", 
+          "George Orwell"
+        ],
+        "answer": "William Shakespea"
+      },
+      {
+        "question": "What does “www” stand for in a website address?",
+        "options": [
+          "World Wide Web", 
+          "Web World Window", 
+          "Wide Web Window", 
+          "Wireless Web World"
+        ],
+        "answer": "World Wide Web"
+      }
+    ],
+    "4": [
+      {
+        "question": "Which country has the most natural lakes in the world?",
+        "options": [
+          "Russia", 
+          "Canada", 
+          "Brazil", 
+          "United States"
+        ],
+        "answer": "Canada"
+      },
+      {
+        "question": "What is the only metal that is liquid at room temperature?",
+        "options": [
+          "Mercury", 
+          "Lead", 
+          "Zinc", 
+          "Aluminum"
+        ],
+        "answer": ""
+      }
+    ],
     "6": [
       {
-        "question": "What is the capital of Australia?",
-        "options": ["Sydney", "Melbourne", "Canberra", "Perth"],
-        "answer": "Canberra"
+        "question": "Which country is home to the world’s largest active volcano, Mauna Loa?",
+        "options": [
+          "Indonesia", 
+          "Japan", 
+          "United States", 
+          "Chile"
+        ],
+        "answer": "United States"
+      },
+      {
+        "question": "Which African country has the largest population?",
+        "options": [
+          "Egypt", 
+          "South Africa​", 
+          "Nigeria", 
+          "Kenya"
+        ],
+        "answer": "Nigeria"
       }
     ],
     "8": [
       {
-        "question": "Which planet is known as the Red Planet?",
-        "options": ["Venus", "Mars", "Jupiter", "Saturn"],
-        "answer": "Mars"
+        "question": "Which Shakespeare play features the line “The lady doth protest too much, methinks”?",
+        "options": [
+          "Macbeth", 
+          "Hamlet", 
+          "Othello", 
+          "King Lear"
+        ],
+        "answer": "Hamlet"
+      }
+    ],
+    "10": [
+      {
+        "question": "Which part of the brain is responsible for regulating balance and coordination?",
+        "options": [
+          "Cerebrum", 
+          "Cerebellum", 
+          "Brainstem", 
+          "Hippocampus"
+        ],
+        "answer": "Cerebellum"
       }
     ]
   },
   "Pop Culture": {
+    "2": [
+      {
+        "question": "What is the in-game currency used in Roblox?",
+        "options": [
+          "BloxCash", 
+          "Rocoins", 
+          "Roblox Dollars", 
+          "Robux"
+        ],
+        "answer": "Robux"
+      },
+      {
+        "question": "What TikTok trend involved people pretending to freeze mid-action while music played?",
+        "options": [
+          "Mannequin Challenge", 
+          "Savage Challenge", 
+          "Renegade Challenge", 
+          "Ice Bucket Challenge"
+        ],
+        "answer": "Mannequin Challenge"
+      },
+      {
+        "question": "What singer holds the record for most Grammy nominations?",
+        "options": [
+          "Taylor Swift", 
+          "Beyonce", 
+          "Adele", 
+          "Jay-Z"
+        ],
+        "answer": "Beyonce"
+      },
+      {
+        "question": "Which tech company's CEO and HR executive resigned after being caught in an awkward embrace on Coldplay's kiss cam during a 2025 concert?",
+        "options": [
+          "Palantir", 
+          "Astronomer", 
+          "OpenAI", 
+          "DeepMind"
+        ],
+        "answer": "Astronomer"
+      }
+    ],
+    "4": [
+      {
+        "question": "Which video game character became a meme for saying “It's-a me!” in a high-pitched voice?",
+        "options": [
+          "Sonic", 
+          "Link", 
+          "Mario", 
+          "Pikachu"
+        ],
+        "answer": "Mario"
+      },
+      {
+        "question": "What phrase did Gen Z popularize to express indifference or irony, often accompanied by a skull emoji?",
+        "options": [
+          "“No cap”", 
+          "“It's giving…”", 
+          "“I'm dead”", 
+          "“Slay”"
+        ],
+        "answer": "“I'm dead”"
+      }
+    ],
+    "6": [
+      {
+        "question": "What is the name of the AI-generated character that helped launch the “Italian Brainrot” meme trend, often depicted as a three-legged shark wearing blue Nike sneakers?",
+        "options": [
+          "Bombardiro Crocodilo", 
+          "Tralalero Tralala", 
+          "Tung Tung Tung Sahur", 
+          "Brr Brr Patapim"
+        ],
+        "answer": "Tralalero Tralala"
+      },
+      {
+        "question": "Which Roblox-style animated series features toilet-headed characters fighting camera-headed soldiers, becoming a viral obsession among Gen Alpha in 2023-2025?",
+        "options": [
+          "Toilet Wars", 
+          "Skibidi", 
+          "Flush Force", 
+          "Cam vs Can"
+        ],
+        "answer": "Skibidi"
+      }
+    ],
     "8": [
       {
-        "question": "In the TV series 'Stranger Things', what is the name of the parallel dimension?",
+        "question": "What is a nonsensical expression used especially by teens and tweens that is connected to a rap song and also to a tall NBA player LaMelo Ball.",
         "options": [
-          "The Other Side",
-          "The Nether",
-          "The Underworld",
-          "The Upside Down"
+          "“6-7”", 
+          "“Halfway vibes”", 
+          "“Meh-core”", 
+          "“So-so drip”"
         ],
-        "answer": "The Upside Down"
+        "answer": "“6-7”"
+      }
+    ],
+    "10": [
+      {
+        "question": "Which Roblox game lets players roleplay in a high school setting with fantasy elements like wings and halos?",
+        "options": [
+          "Royale High", 
+          "Brookhaven", 
+          "Bloxburg", 
+          "Tower of Hell"
+        ],
+        "answer": "Royale High"
       }
     ]
   },
