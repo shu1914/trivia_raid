@@ -139,14 +139,14 @@ async function applyBossAoE() {
 }
 
 async function nextTurn() {
-  // ... (nextTurn logic is unchanged from previous response)
-  const isLastPlayerInList = gameState.currentPlayerIndex === gameState.players.length - 1;
+  const prevIndex = gameState.currentPlayerIndex;
+  const isLastPlayerInList = prevIndex === gameState.players.length - 1;
 
   let found = false;
   let attempts = 0;
-  let currentIndex = gameState.currentPlayerIndex;
+  let currentIndex = prevIndex;
 
-  while (!found && attempts < gameState.players.length * 2) { // x2 to allow full loop of stuns
+  while (!found && attempts < gameState.players.length * 2) {
     currentIndex = (currentIndex + 1) % gameState.players.length;
     const nextPlayer = gameState.players[currentIndex];
     attempts++;
@@ -165,7 +165,6 @@ async function nextTurn() {
         broadcastState();
         await delay(800);
         gameState.lastAction = null;
-        // Continue loop to find the next valid player
       } else {
         found = true;
         gameState.currentPlayerIndex = currentIndex;
@@ -174,7 +173,7 @@ async function nextTurn() {
   }
 
   if (gameState.boss.hp <= 0 || gameState.winner) return;
-  if (gameState.currentPlayerIndex === 0 && (isLastPlayerInList || attempts > 1)) {
+  if (gameState.currentPlayerIndex < prevIndex || (isLastPlayerInList && gameState.currentPlayerIndex === 0)) {
     await delay(300);
     await applyBossAoE();
     gameState.round++;
@@ -186,12 +185,29 @@ function checkVictory() {
   if (gameState.boss.hp <= 0) {
     let top = null;
     for (const p of gameState.players) {
-      if (!top || (p.damageDealt || 0) > (top.damageDealt || 0)) top = p;
+      if (!top || (p.damageDealt || 0) > (top.damageDealt || 0)) {
+        top = p;
+      }
     }
     gameState.winner = top?.name || 'Players';
+    return;
   }
+
   if (gameState.players.length > 0 && gameState.players.every(p => p.hp <= 0)) {
     gameState.winner = gameState.boss.name;
+    return;
+  }
+
+  const alivePlayers = gameState.players.filter(p => p.hp > 0);
+  if (alivePlayers.length === 1) {
+    let top = null;
+    for (const p of gameState.players) {
+      if (!top || (p.damageDealt || 0) > (top.damageDealt || 0)) {
+        top = p;
+      }
+    }
+    gameState.winner = top?.name || alivePlayers[0].name;
+    return;
   }
 }
 
@@ -418,6 +434,7 @@ io.on('connection', socket => {
       [attacker, defender] = [gameState.players[opponentIndex], gameState.players[challengerIndex]];
     } else {
       [attacker, defender] = [gameState.players[challengerIndex], gameState.players[opponentIndex]];
+      attacker.damageDealt += dmg;
     }
 
     if (defender) {
