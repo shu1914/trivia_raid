@@ -400,98 +400,143 @@ export default function Visual() {
           : "—"}{" "}
       </div>
 
-      {/* Question Pool Table */}
-      {questionCounts && (
-        <div className="card" style={{ marginTop: 24 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Question Pool</div>
-          <table
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 24,
+          marginTop: 32,
+        }}
+      >
+        {/* Question Pool */}
+        {questionCounts && (
+          <div
+            className="card"
             style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              textAlign: "center",
+              flex: "1 1 400px",
+              minWidth: 350,
+              padding: 16,
+              background: "#1e1e1e",
+              borderRadius: 12,
             }}
           >
-            <thead>
-              <tr>
-                <th
-                  style={{
-                    padding: 8,
-                    borderBottom: "1px solid #444",
-                    textAlign: "left",
-                  }}
-                >
-                  Category
-                </th>
-                {questionCounts.points.map((p) => (
-                  <th
-                    key={p}
-                    style={{ padding: 8, borderBottom: "1px solid #444" }}
-                  >
-                    {p} pts
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {questionCounts.categories.map((cat) => (
-                <tr key={cat}>
-                  <td
-                    style={{
-                      padding: 8,
-                      borderBottom: "1px solid #333",
-                      textAlign: "left",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {cat}
-                  </td>
-                  {questionCounts.points.map((p) => (
-                    <td
-                      key={p}
-                      style={{
-                        padding: 8,
-                        borderBottom: "1px solid #333",
-                        fontSize: 18,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {questionCounts.counts[cat]?.[p] || 0}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <div className="card" style={{ marginTop: 24 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8 }}>Leaderboard</div>
-        <AnimatePresence>
-          {leaderboard.map((p, i) => (
-            <motion.div
-              key={p.index}
-              layout
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="player-row"
+            <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: 4,
-                fontWeight: 700,
-                color: TEAM_COLORS[p.team] || "#fff",
+                fontWeight: 800,
+                fontSize: 24,
+                marginBottom: 12,
+                textAlign: "center",
+                color: "#f1c40f",
               }}
             >
-              <div>
-                {" "}
-                #{i + 1} {p.name}{" "}
-              </div>
-              <div className="muted">Damage: {p.damageDealt || 0}</div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              Question Pool
+            </div>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: "20px",
+              }}
+            >
+              <thead>
+                <tr>
+                  <th
+                    style={{
+                      padding: 10,
+                      borderBottom: "2px solid #555",
+                      textAlign: "left",
+                    }}
+                  >
+                    Category
+                  </th>
+                  {questionCounts.points.map((p) => (
+                    <th
+                      key={p}
+                      style={{ padding: 10, borderBottom: "2px solid #555" }}
+                    >
+                      {p} pts
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {questionCounts.categories.map((cat, i) => (
+                  <tr
+                    key={cat}
+                    style={{
+                      background: i % 2 === 0 ? "#2c2c2c" : "transparent",
+                    }}
+                  >
+                    <td style={{ padding: 10, fontWeight: 700 }}>{cat}</td>
+                    {questionCounts.points.map((p) => (
+                      <td
+                        key={p}
+                        style={{
+                          padding: 10,
+                          fontSize: 22,
+                          fontWeight: 700,
+                          color: "#fff",
+                        }}
+                      >
+                        {questionCounts.counts[cat]?.[p] || 0}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Leaderboard */}
+        <div
+          className="card"
+          style={{
+            flex: "1 1 300px",
+            minWidth: 280,
+            padding: 16,
+            background: "#1e1e1e",
+            borderRadius: 12,
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 800,
+              fontSize: 24,
+              marginBottom: 12,
+              textAlign: "center",
+              color: "#2ecc71",
+            }}
+          >
+            Leaderboard
+          </div>
+          <AnimatePresence>
+            {leaderboard.map((p, i) => (
+              <motion.div
+                key={p.index}
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "10px 12px",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  background: i % 2 === 0 ? "#2c2c2c" : "transparent",
+                  borderRadius: 6,
+                  color: TEAM_COLORS[p.team] || "#fff",
+                }}
+              >
+                <div>
+                  #{i + 1} {p.name}
+                </div>
+                <div style={{ fontSize: 18 }}>💥 {p.damageDealt || 0}</div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
       <AnimatePresence>
         {attacks.map((atk) => {
