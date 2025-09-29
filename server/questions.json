@@ -2,16 +2,112 @@
   "Entertainment": {
     "2": [
       {
-        "question": "Who wrote the 'Harry Potter' series of books?",
-        "options": ["J.R.R. Tolkien", "George R.R. Martin", "J.K. Rowling", "Stephen King"],
-        "answer": "J.K. Rowling"
+        "question": "Which movie features a character named Jack Sparrow?",
+        "options": [
+          "Harry Potter",
+          "Pirates of the Caribbean",
+          "Lords of the Rings",
+          "The Avengers"
+        ],
+        "answer": "Pirates of the Caribbean"
+      },
+      {
+        "question": "Which animated movie features a character named Elsa?",
+        "options": [
+          "Tangled",
+          "Moana",
+          "Frozen",
+          "Brave"
+        ],
+        "answer": "Frozen"
+      },
+      {
+        "question": "Which pop star released the album titled “1989”?",
+        "options": [
+          "Taylor Swift",
+          "Selena Gomez",
+          "Beyonce",
+          "Rihanna"
+        ],
+        "answer": "Taylor Swift"
+      },
+      {
+        "question": "Who plays Iron Man in the Marvel Cinematic Universe?",
+        "options": [
+          "Chris Evans",
+          "Chris Hemsworth",
+          "Mark Ruffalo",
+          "Robert Downey Jr."
+        ],
+        "answer": "Robert Downey Jr."
       }
     ],
     "4": [
       {
-        "question": "Which movie won the first-ever Academy Award for Best Picture in 1929?",
-        "options": ["The Artist", "Wings", "Sunrise", "Metropolis"],
-        "answer": "Wings"
+        "question": "Who is known as the “King of Pop”?",
+        "options": [
+          "Elvis Presley",
+          "Justin Bieber",
+          "Prince",
+          "Michael Jackson"
+        ],
+        "answer": "Michael Jackson"
+      },
+      {
+        "question": "In what year was the first “Avengers” movie released?",
+        "options": [
+          "2008",
+          "2010",
+          "2012",
+          "2015"
+        ],
+        "answer": "2012"
+      }
+    ],
+    "6": [
+      {
+        "question": "Which 2023 film became the highest-grossing movie directed by a woman, surpassing previous records held by Wonder Woman and Frozen II?",
+        "options": [
+          "Barbie",
+          "The Marvels",
+          "Past Lives",
+          "Saltburn"
+        ],
+        "answer": "Barbie"
+      },
+      {
+        "question": "Which 1994 film features a character who says, “Life is like a box of chocolates. You never know what you're gonna get”?",
+        "options": [
+          "The Shawshank Redemption",
+          "Pulp Fiction",
+          "Forrest Gump",
+          "Jerry Maguire"
+        ],
+        "answer": "Forrest Gump"
+      }
+    ],
+    "8": [
+      {
+        "question": "Which singer's real name is Stefani Joanne Angelina Germanotta?",
+        "options": [
+          "Lady Gaga",
+          "Madonna",
+          "Arianna Grande",
+          "Katy Perry"
+        ],
+        "answer": "Lady Gaga"
+      }
+    ],
+    "10": [
+      {
+        "question": "Which streaming series became Netflix’s most-watched show of all time within its first 28 days of release?",
+        "options": [
+          "Bridgerton",
+          "Stranger Things",
+          "Squid Game",
+          "The Queen's Gambit"
+        ],
+        "answer": "Squid Game"
       }
     ]
   },
@@ -33,9 +129,14 @@
   },
   "Pop Culture": {
     "8": [
-       {
+      {
         "question": "In the TV series 'Stranger Things', what is the name of the parallel dimension?",
-        "options": ["The Other Side", "The Nether", "The Underworld", "The Upside Down"],
+        "options": [
+          "The Other Side",
+          "The Nether",
+          "The Underworld",
+          "The Upside Down"
+        ],
         "answer": "The Upside Down"
       }
     ]
