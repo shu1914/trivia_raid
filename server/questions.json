@@ -246,14 +246,14 @@
         "answer": "Mannequin Challenge"
       },
       {
-        "question": "What singer holds the record for most Grammy nominations?",
+        "question": "What does the acronym 'smh' means?",
         "options": [
-          "Taylor Swift", 
-          "Beyonce", 
-          "Adele", 
-          "Jay-Z"
+          "Shaking my head",
+          "So much hate",
+          "Share my heart",
+          "Something"
         ],
-        "answer": "Beyonce"
+        "answer": "Shaking my head"
       },
       {
         "question": "Which tech company's CEO and HR executive resigned after being caught in an awkward embrace on Coldplay's kiss cam during a 2025 concert?",
@@ -278,78 +278,284 @@
         "answer": "Mario"
       },
       {
-        "question": "What phrase did Gen Z popularize to express indifference or irony, often accompanied by a skull emoji?",
+        "question":"Which anime features a cursed finger belonging to one of its characters?",
         "options": [
-          "“No cap”", 
-          "“It's giving…”", 
-          "“I'm dead”", 
-          "“Slay”"
+          "Chainsaw Man",
+          "Bleach",
+          "Jujutsu Kaisen",
+          "Blue Lock"
         ],
-        "answer": "“I'm dead”"
+        "answer": "Jujutsu Kaisen"
       }
     ],
     "6": [
       {
-        "question": "What is the name of the AI-generated character that helped launch the “Italian Brainrot” meme trend, often depicted as a three-legged shark wearing blue Nike sneakers?",
+        "question": "Which BINI song released in March 2024 topped the Billboard Philippines Songs chart and was among the top local songs of the year?",
         "options": [
-          "Bombardiro Crocodilo", 
-          "Tralalero Tralala", 
-          "Tung Tung Tung Sahur", 
-          "Brr Brr Patapim"
+          "Pantropiko",
+          "Cherry on Top",
+          "Salamin, Salamin",
+          "Karera"
         ],
-        "answer": "Tralalero Tralala"
+        "answer": "Salamin, Salamin"
       },
       {
-        "question": "Which Roblox-style animated series features toilet-headed characters fighting camera-headed soldiers, becoming a viral obsession among Gen Alpha in 2023-2025?",
+        "question": "What does SB19 means?",
         "options": [
-          "Toilet Wars", 
-          "Skibidi", 
-          "Flush Force", 
-          "Cam vs Can"
+          "Singing Boys 19", 
+          "Sound Break 19", 
+          "Sound Barrier 19", 
+          "Sigma Boys 19"
         ],
-        "answer": "Skibidi"
+        "answer": "Sound Break 19"
       }
     ],
     "8": [
-      {
-        "question": "What is a nonsensical expression used especially by teens and tweens that is connected to a rap song and also to a tall NBA player LaMelo Ball.",
-        "options": [
-          "“6-7”", 
-          "“Halfway vibes”", 
-          "“Meh-core”", 
-          "“So-so drip”"
-        ],
-        "answer": "“6-7”"
-      }
+    {
+      "question": "Which K-pop girl group made history in 2023 by headlining Coachella and being the first Asian act to do so?",
+      "options": [
+        "TWICE",
+        "BLACKPINK",
+        "NewJeans",
+        "IVE"
+      ],
+      "answer": "BLACKPINK"
+    }
     ],
     "10": [
       {
-        "question": "Which Roblox game lets players roleplay in a high school setting with fantasy elements like wings and halos?",
+        "question": "Which anime film became the highest-grossing movie in the Philippines in 2023, surpassing even Hollywood blockbusters?",
         "options": [
-          "Royale High", 
-          "Brookhaven", 
-          "Bloxburg", 
-          "Tower of Hell"
+          "Suzume",
+          "Demon Slayer: Mugen Train",
+          "Your Name",
+          "Jujutsu Kaisen 0"
         ],
-        "answer": "Royale High"
+        "answer": "Suzume"
       }
     ]
   },
   "Mythology": {
+    "2": [
+      {
+        "question": "Who is the king of the Greek gods?",
+        "options": [
+          "Poseidon",
+          "Zeus",
+          "Hades",
+          "Apollo"
+        ],
+        "answer": "Zeus"
+      },
+      {
+        "question": "What is the name of Thor's hammer?",
+        "options": [
+          "Excalibur",
+          "Mjolnir",
+          "Gungnir",
+          "Gram"
+        ],
+        "answer": "Mjolnir"
+      },
+      {
+        "question": "Who is the Egyptian god of the sun?",
+        "options": [
+          "Ra",
+          "Anubis",
+          "Osiris",
+          "Horus"
+        ],
+        "answer": "Ra"
+      },
+      {
+        "question": "Which Roman goddess is equivalent to the Greek goddess Aphrodite?",
+        "options": [
+          "Diana",
+          "Minerva",
+          "Venus",
+          "Juno"
+        ],
+        "answer": "Venus"
+      }
+    ],
+    "4": [
+      {
+        "question": "What is the name of the winged horse born from Medusa's blood?",
+        "options": [
+          "Pegasus",
+          "Chimera",
+          "Hippogriff",
+          "Griffin"
+        ],
+        "answer": "Pegasus"
+      },
+      {
+        "question": "In Chinese mythology, which sacred creature guards the West and is associated with the element Metal?",
+        "options": [
+          "Azure Dragon",
+          "White Tiger",
+          "Vermilion Bird",
+          "Black Tortoise"
+        ],
+        "answer": "White Tiger"
+      }
+    ],
+    "6": [
+      {
+        "question": "What is the name of the gate commonly found at Shinto shrines, symbolizing the boundary between the human world and the sacred?",
+        "options": [
+          "Pagoda",
+          "Torii",
+          "Shimenawa",
+          "Kami"
+        ],
+        "answer": "Torii"
+      },
+      {
+        "question": "Which Shinto deity is the sun goddess and considered the ancestor of the imperial family?",
+        "options": [
+          "Tsukuyomi",
+          "Susanoo",
+          "Amaterasu",
+          "Izanami"
+        ],
+        "answer": "Amaterasu"
+      }
+    ],
+    "8": [
+      {
+        "question": "What is the name of the world tree that connects the nine realms in Norse mythology?",
+        "options": [
+          "Yggdrasil",
+          "Bifröst",
+          "Askr",
+          "Midgard"
+        ],
+        "answer": "Yggdrasil"
+      }
+    ],
     "10": [
       {
-        "question": "In Greek mythology, who is the god of the sea?",
-        "options": ["Zeus", "Hades", "Poseidon", "Ares"],
-        "answer": "Poseidon"
+        "question": "Who was the Titan condemned to hold up the sky for eternity?",
+        "options": [
+          "Prometheus",
+          "Cronus",
+          "Atlas",
+          "Hyperion"
+        ],
+        "answer": "Atlas"
       }
     ]
   },
   "Random": {
     "2": [
       {
-        "question": "How many hearts does an octopus have?",
-        "options": ["One", "Two", "Three", "Four"],
-        "answer": "Three"
+        "question": "What does F/C/R stands for (in the context of Landscape 2)?",
+        "options": [
+          "Forge/Cache/Roll",
+          "Force/Cache/Roll",
+          "Forge/Cast/Roll",
+          "Force/Cast/Roll"
+        ],
+        "answer": "Force/Cast/Roll"
+      },
+      {
+        "question": "Which classical composer famously went completely deaf later in his life?",
+        "options": [
+          "Wolfgang Amadeus Mozart",
+          "Ludwig van Beethoven",
+          "Johann Sebastian Bach",
+          "Frédéric Chopin"
+        ],
+        "answer": "Ludwig van Beethoven"
+      },
+      {
+        "question": "What element makes up about 78% of Earth's atmosphere?",
+        "options": [
+          "Oxygen",
+          "Nitrogen",
+          "Carbon Dioxide",
+          "Helium"
+        ],
+        "answer": "Nitrogen"
+      },
+      {
+        "question": "What is the technical term for the tiny piece of plastic or metal at the end of a shoelace?",
+        "options": [
+          "Aglet",
+          "Ferrule",
+          "Lace Tip",
+          "Taglet"
+        ],
+        "answer": "Aglet"
+      }
+    ],
+    "4": [
+      {
+        "question": "When did our cafeteria in Lexmark re-opened?",
+        "options": [
+          "August 11",
+          "August 13",
+          "August 18",
+          "August 20"
+        ],
+        "answer": "August 20"
+      },
+      {
+        "question": "What element makes up about 78% of Earth's atmosphere?",
+        "options": [
+          "Oxygen",
+          "Nitrogen",
+          "Carbon Dioxide",
+          "Helium"
+        ],
+        "answer": "Nitrogen"
+      }
+    ],
+    "6": [
+      {
+        "question": "What is the collective noun for a group of flamingos?",
+        "options": [
+          "Elegance",
+          "Parade",
+          "Colony",
+          "Flamboyance"
+        ],
+        "answer": "Flamboyance"
+      },
+      {
+        "question": "Which country invented paper?",
+        "options": [
+          "Egypt",
+          "India",
+          "China",
+          "Greece"
+        ],
+        "answer": "China"
+      }
+    ],
+    "8": [
+      {
+        "question": "What was the first animal to be cloned successfully?",
+        "options": [
+          "Dog",
+          "Sheep",
+          "Cow",
+          "Mouse"
+        ],
+        "answer": "Sheep"
+      }
+    ],
+    "10": [
+      {
+        "question": "What is the name of the sound that a male moose makes during mating season?",
+        "options": [
+          "Bellow",
+          "Trumpet",
+          "Bugle",
+          "Groan"
+        ],
+        "answer": "Bellow"
       }
     ]
   }
