@@ -1,15 +1,17 @@
 // server/index.js
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 app.use(cors());
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' }
+  cors: { origin: "*" },
 });
 
 // ----------------------
@@ -22,22 +24,34 @@ const MAX_HISTORY = 20;
 const RESURRECTION_HP = 10;
 
 const ABILITIES_CONFIG = {
-    'Redirect Damage': { timing: 'anytime' },
-    'Disarm': { timing: 'anytime' },
-    'Stun': { timing: 'anytime' },
-    'Increased Damage': { timing: 'turn-only' },
-    'Lifesteal': { timing: 'turn-only' },
-    'Resurrection': { timing: 'passive' }
+  "Redirect Damage": { timing: "anytime" },
+  Disarm: { timing: "anytime" },
+  Stun: { timing: "anytime" },
+  "Increased Damage": { timing: "turn-only" },
+  Lifesteal: { timing: "turn-only" },
+  Resurrection: { timing: "passive" },
 };
+
+let allQuestions = {};
+try {
+  const questionsPath = path.join(__dirname, "questions.json");
+  const questionsData = fs.readFileSync(questionsPath, "utf8");
+  allQuestions = JSON.parse(questionsData);
+  console.log("Successfully loaded questions.json");
+} catch (err) {
+  console.error("Error reading or parsing questions.json:", err);
+}
 
 let gameState = {
   players: [],
-  boss: { name: 'Riddlebeast', hp: 75, maxHp: 75 },
+  boss: { name: "Riddlebeast", hp: 75, maxHp: 75 },
   currentPlayerIndex: 0,
   round: 1,
   settings: { bossAoE: DEFAULT_BOSS_AOE, pvpDamage: DEFAULT_PVP_DAMAGE },
   winner: null,
-  lastAction: null
+  lastAction: null,
+  currentQuestion: null,
+  answeredQuestions: [],
 };
 
 let gameHistory = [];
@@ -55,30 +69,52 @@ function undo() {
   if (gameHistory.length === 0) return;
   const lastState = gameHistory.pop();
   Object.assign(gameState, lastState);
-  broadcastState();
+  broadcastUpdates();
 }
 
-function broadcastState() {
-  io.emit('state', gameState);
+function getQuestionId(q) {
+  if (!q || !q.question) return null;
+  return q.question;
+}
+
+function getAvailableQuestions() {
+  const available = {};
+  for (const category in allQuestions) {
+    available[category] = {};
+    for (const points in allQuestions[category]) {
+      const filtered = allQuestions[category][points].filter(
+        (q) => !gameState.answeredQuestions.includes(getQuestionId(q))
+      );
+      if (filtered.length > 0) {
+        available[category][points] = filtered;
+      }
+    }
+  }
+  return available;
+}
+
+function broadcastUpdates() {
+  io.emit("state", gameState);
+  io.emit("availableQuestions", getAvailableQuestions());
 }
 
 function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ----------------------
 // Core Game Logic
 // ----------------------
 function checkAndApplyResurrection(player) {
-    if (player && player.hp <= 0) {
-        const resIndex = player.abilities.indexOf('Resurrection');
-        if (resIndex !== -1) {
-            player.hp = RESURRECTION_HP;
-            player.abilities.splice(resIndex, 1); // Consume ability
-            return true; // Resurrection occurred
-        }
+  if (player && player.hp <= 0) {
+    const resIndex = player.abilities.indexOf("Resurrection");
+    if (resIndex !== -1) {
+      player.hp = RESURRECTION_HP;
+      player.abilities.splice(resIndex, 1);
+      return true;
     }
-    return false;
+  }
+  return false;
 }
 
 function initGame(payload = {}) {
@@ -91,25 +127,28 @@ function initGame(payload = {}) {
     const team = TEAM_NAMES[i % TEAM_NAMES.length];
     const assignedAbility = abilityAssignments[team];
     return {
-        id: i,
-        name: p.name || `Player ${i}`,
-        hp: DEFAULT_PLAYER_HP,
-        maxHp: DEFAULT_PLAYER_HP,
-        damageDealt: 0,
-        team: team,
-        abilities: assignedAbility ? [assignedAbility] : [],
-        statusEffects: []
+      id: i,
+      name: p.name || `Player ${i}`,
+      hp: DEFAULT_PLAYER_HP,
+      maxHp: DEFAULT_PLAYER_HP,
+      damageDealt: 0,
+      team: team,
+      abilities: assignedAbility ? [assignedAbility] : [],
+      statusEffects: [],
     };
   });
 
-  const bossHp = Number(payload.bossHp) || Math.max(75, 15 * Math.max(1, players.length));
-  const bossName = payload.bossName || 'Riddlebeast';
+  const bossHp =
+    Number(payload.bossHp) || Math.max(75, 15 * Math.max(1, players.length));
+  const bossName = payload.bossName || "Riddlebeast";
 
   gameState.players = players;
   gameState.boss = { name: bossName, hp: bossHp, maxHp: bossHp };
   gameState.currentPlayerIndex = 0;
   gameState.round = 1;
   gameState.winner = null;
+  gameState.currentQuestion = null;
+  gameState.answeredQuestions = [];
 }
 
 async function applyBossAoE() {
@@ -118,23 +157,23 @@ async function applyBossAoE() {
   for (const p of gameState.players) {
     if (p.hp <= 0) continue;
     saveHistory();
-    
+
     p.hp = Math.max(0, p.hp - dmg);
     const resurrected = checkAndApplyResurrection(p);
 
     gameState.lastAction = {
-      type: 'attack',
+      type: "attack",
       attacker: gameState.boss.name,
       target: p.name,
       damage: dmg,
-      effect: 'bossAoE',
+      effect: "bossAoE",
       resurrected: resurrected,
     };
-    broadcastState();
+    broadcastUpdates();
 
     await delay(600);
     gameState.lastAction = null;
-    broadcastState();
+    broadcastUpdates();
   }
 }
 
@@ -152,17 +191,21 @@ async function nextTurn() {
     attempts++;
 
     if (nextPlayer && nextPlayer.hp > 0) {
-      const stunEffect = nextPlayer.statusEffects.find(e => e.type === 'stunned');
+      const stunEffect = nextPlayer.statusEffects.find(
+        (e) => e.type === "stunned"
+      );
       if (stunEffect) {
         saveHistory();
-        nextPlayer.statusEffects = nextPlayer.statusEffects.filter(e => e.type !== 'stunned');
+        nextPlayer.statusEffects = nextPlayer.statusEffects.filter(
+          (e) => e.type !== "stunned"
+        );
         gameState.lastAction = {
-          type: 'info',
+          type: "info",
           message: `${nextPlayer.name}'s turn skipped (Stunned)`,
           targetName: nextPlayer.name,
-          effect: 'stunned'
+          effect: "stunned",
         };
-        broadcastState();
+        broadcastUpdates();
         await delay(800);
         gameState.lastAction = null;
       } else {
@@ -173,7 +216,10 @@ async function nextTurn() {
   }
 
   if (gameState.boss.hp <= 0 || gameState.winner) return;
-  if (gameState.currentPlayerIndex < prevIndex || (isLastPlayerInList && gameState.currentPlayerIndex === 0)) {
+  if (
+    gameState.currentPlayerIndex < prevIndex ||
+    (isLastPlayerInList && gameState.currentPlayerIndex === 0)
+  ) {
     await delay(300);
     await applyBossAoE();
     gameState.round++;
@@ -189,16 +235,17 @@ function checkVictory() {
         top = p;
       }
     }
-    gameState.winner = top?.name || 'Players';
+    gameState.winner = top?.name || "Players";
     return;
   }
-
-  if (gameState.players.length > 0 && gameState.players.every(p => p.hp <= 0)) {
+  if (
+    gameState.players.length > 0 &&
+    gameState.players.every((p) => p.hp <= 0)
+  ) {
     gameState.winner = gameState.boss.name;
     return;
   }
-
-  const alivePlayers = gameState.players.filter(p => p.hp > 0);
+  const alivePlayers = gameState.players.filter((p) => p.hp > 0);
   if (alivePlayers.length === 1) {
     let top = null;
     for (const p of gameState.players) {
@@ -213,268 +260,353 @@ function checkVictory() {
 
 async function handlePlayerAction({ playerId, action, value, target }) {
   const current = gameState.currentPlayerIndex;
-  if (playerId !== current) return { ok: false, reason: 'not-your-turn', expected: current };
+  if (playerId !== current)
+    return { ok: false, reason: "not-your-turn", expected: current };
 
   const actingPlayer = gameState.players[playerId];
-  if (!actingPlayer || actingPlayer.hp <= 0) return { ok: false, reason: 'player-dead' };
+  if (!actingPlayer || actingPlayer.hp <= 0)
+    return { ok: false, reason: "player-dead" };
 
-  saveHistory(); // save BEFORE state changes
+  saveHistory();
   let lastActionObj = {};
 
-  const disarmEffect = actingPlayer.statusEffects.find(e => e.type === 'disarmed');
+  const disarmEffect = actingPlayer.statusEffects.find(
+    (e) => e.type === "disarmed"
+  );
   if (disarmEffect) {
-    // Always remove disarm if the player takes an offensive or self action
-    if (['attackBoss', 'attackPlayer', 'selfDamage', 'wrongAnswer'].includes(action)) {
-      actingPlayer.statusEffects = actingPlayer.statusEffects.filter(e => e.type !== 'disarmed');
-
-      // If it's attackBoss or attackPlayer → block damage (return early)
-      if (action === 'attackBoss' || action === 'attackPlayer') {
+    if (
+      ["attackBoss", "attackPlayer", "selfDamage", "wrongAnswer"].includes(
+        action
+      )
+    ) {
+      actingPlayer.statusEffects = actingPlayer.statusEffects.filter(
+        (e) => e.type !== "disarmed"
+      );
+      if (action === "attackBoss" || action === "attackPlayer") {
         lastActionObj = {
-          type: 'attack',
+          type: "attack",
           attacker: actingPlayer.name,
-          target: action === 'attackBoss'
-            ? gameState.boss.name
-            : gameState.players[target].name,
+          target:
+            action === "attackBoss"
+              ? gameState.boss.name
+              : gameState.players[target].name,
           damage: 0,
-          effect: 'disarmed'
+          effect: "disarmed",
         };
         gameState.lastAction = lastActionObj;
-        broadcastState();
+        broadcastUpdates();
         await delay(400);
         gameState.lastAction = null;
+        if (gameState.currentQuestion?.isRevealed)
+          gameState.currentQuestion = null;
         await nextTurn();
         checkVictory();
-        broadcastState();
+        broadcastUpdates();
         return { ok: true };
       }
-
-      // If it's selfDamage/wrongAnswer → continue to damage handling below
     }
   }
 
   let baseDmg = Number(value) || 0;
-  
-  const boostEffect = actingPlayer.statusEffects.find(e => e.type === 'damageBoost');
+  const boostEffect = actingPlayer.statusEffects.find(
+    (e) => e.type === "damageBoost"
+  );
   if (boostEffect) {
     baseDmg = Math.round(baseDmg * boostEffect.multiplier);
-    actingPlayer.statusEffects = actingPlayer.statusEffects.filter(e => e.type !== 'damageBoost');
+    actingPlayer.statusEffects = actingPlayer.statusEffects.filter(
+      (e) => e.type !== "damageBoost"
+    );
   }
 
   switch (action) {
-    case 'attackBoss': {
+    case "attackBoss": {
       const originalHp = gameState.boss.hp;
       gameState.boss.hp = Math.max(0, gameState.boss.hp - baseDmg);
       const actualDamage = originalHp - gameState.boss.hp;
       actingPlayer.damageDealt = (actingPlayer.damageDealt || 0) + actualDamage;
-      lastActionObj = { type: 'attack', attacker: actingPlayer.name, target: gameState.boss.name, damage: actualDamage, effect: 'slash' };
+      lastActionObj = {
+        type: "attack",
+        attacker: actingPlayer.name,
+        target: gameState.boss.name,
+        damage: actualDamage,
+        effect: "slash",
+      };
       break;
     }
-    case 'attackPlayer': {
+    case "attackPlayer": {
       let targetPlayer = gameState.players[Number(target)];
-      if (!targetPlayer || targetPlayer.hp <= 0) return { ok: false, reason: 'invalid-target' };
-      
+      if (!targetPlayer || targetPlayer.hp <= 0)
+        return { ok: false, reason: "invalid-target" };
       let redirectedFrom = null;
-      const redirectEffect = targetPlayer.statusEffects.find(e => e.type === 'redirect');
+      const redirectEffect = targetPlayer.statusEffects.find(
+        (e) => e.type === "redirect"
+      );
       if (redirectEffect) {
         redirectedFrom = targetPlayer.name;
-        targetPlayer.statusEffects = targetPlayer.statusEffects.filter(e => e.type !== 'redirect');
-        if (redirectEffect.target === 'boss') {
+        targetPlayer.statusEffects = targetPlayer.statusEffects.filter(
+          (e) => e.type !== "redirect"
+        );
+        if (redirectEffect.target === "boss") {
           const originalBossHp = gameState.boss.hp;
           gameState.boss.hp = Math.max(0, gameState.boss.hp - baseDmg);
           actingPlayer.damageDealt += originalBossHp - gameState.boss.hp;
-          targetPlayer = gameState.boss; // For lastAction
+          targetPlayer = gameState.boss;
         } else if (gameState.players[redirectEffect.target]) {
           targetPlayer = gameState.players[redirectEffect.target];
         }
       }
-
       const originalHp = targetPlayer.hp;
       targetPlayer.hp = Math.max(0, targetPlayer.hp - baseDmg);
       const actualDamage = originalHp - targetPlayer.hp;
-      
       if (targetPlayer.name !== gameState.boss.name) {
         actingPlayer.damageDealt += Math.floor(actualDamage / 2);
       }
-      
       const resurrected = checkAndApplyResurrection(targetPlayer);
-
-      lastActionObj = { type: 'attack', attacker: actingPlayer.name, target: targetPlayer.name, damage: actualDamage, effect: 'slash', redirectedFrom, resurrected };
+      lastActionObj = {
+        type: "attack",
+        attacker: actingPlayer.name,
+        target: targetPlayer.name,
+        damage: actualDamage,
+        effect: "slash",
+        redirectedFrom,
+        resurrected,
+      };
       break;
     }
-    case 'selfDamage':
-    case 'wrongAnswer': {
+    case "selfDamage":
+    case "wrongAnswer": {
       const dmg = Math.ceil(baseDmg / 2);
       const originalHp = actingPlayer.hp;
       actingPlayer.hp = Math.max(0, actingPlayer.hp - dmg);
       const resurrected = checkAndApplyResurrection(actingPlayer);
-      lastActionObj = { type: 'attack', attacker: actingPlayer.name, target: actingPlayer.name, damage: originalHp - actingPlayer.hp, effect: 'self', resurrected };
+      lastActionObj = {
+        type: "attack",
+        attacker: actingPlayer.name,
+        target: actingPlayer.name,
+        damage: originalHp - actingPlayer.hp,
+        effect: "self",
+        resurrected,
+      };
       break;
     }
-    default: return { ok: false, reason: 'unknown-action' };
+    default:
+      return { ok: false, reason: "unknown-action" };
   }
-  
-  const lifestealEffect = actingPlayer.statusEffects.find(e => e.type === 'lifesteal');
+
+  const lifestealEffect = actingPlayer.statusEffects.find(
+    (e) => e.type === "lifesteal"
+  );
   if (lifestealEffect && lastActionObj.damage > 0) {
-      const healAmount = Math.round(lastActionObj.damage * lifestealEffect.ratio);
-      actingPlayer.hp = Math.min(actingPlayer.maxHp, actingPlayer.hp + healAmount);
-      actingPlayer.statusEffects = actingPlayer.statusEffects.filter(e => e.type !== 'lifesteal');
-      lastActionObj.lifestealAmount = healAmount;
+    const healAmount = Math.round(lastActionObj.damage * lifestealEffect.ratio);
+    actingPlayer.hp = Math.min(
+      actingPlayer.maxHp,
+      actingPlayer.hp + healAmount
+    );
+    actingPlayer.statusEffects = actingPlayer.statusEffects.filter(
+      (e) => e.type !== "lifesteal"
+    );
+    lastActionObj.lifestealAmount = healAmount;
   }
 
-  gameState.lastAction = lastActionObj;
-  broadcastState();
-  await delay(350);
-  gameState.lastAction = null;
-  broadcastState();
+  // If a question triggered this action, hide the modal first.
+  if (gameState.currentQuestion?.isRevealed) {
+    saveHistory();
+    gameState.currentQuestion = null;
+    broadcastUpdates();
+    await delay(500); // Allow modal exit animation (0.3s) + buffer
+  }
 
+  // Now show the attack animation
+  saveHistory();
+  gameState.lastAction = lastActionObj;
+  broadcastUpdates();
+  await delay(800); // Let the animation play out
+
+  // Clean up the animation state
+  gameState.lastAction = null;
+
+  // Advance the turn
   checkVictory();
   await nextTurn();
   checkVictory();
-  broadcastState();
+  broadcastUpdates();
   return { ok: true };
 }
 
 function handleUseAbility({ playerId, ability, targetId }) {
   const player = gameState.players[playerId];
   if (!player || player.hp <= 0) return;
-
   const abilityConfig = ABILITIES_CONFIG[ability];
-  if (!abilityConfig) return;
-
-  // Enforce turn-only timing
-  if (abilityConfig.timing === 'turn-only' && gameState.currentPlayerIndex !== playerId) {
+  if (
+    !abilityConfig ||
+    abilityConfig.timing === "passive" ||
+    (abilityConfig.timing === "turn-only" &&
+      gameState.currentPlayerIndex !== playerId)
+  )
     return;
-  }
-  // Prevent casting passive abilities
-  if (abilityConfig.timing === 'passive') {
-    return;
-  }
-
   const abilityIndex = player.abilities.indexOf(ability);
   if (abilityIndex === -1) return;
-
-  // Normalize targetId:
-  // - keep 'boss' as string
-  // - convert numeric strings to numbers (select returns strings)
-  // - leave undefined/null as-is
   let normalizedTargetId = targetId;
-  if (typeof targetId === 'string' && targetId !== 'boss' && targetId !== '') {
-    // if numeric-looking, coerce to Number
-    if (/^\d+$/.test(targetId)) normalizedTargetId = Number(targetId);
-  }
-
-  // Resolve a targetPlayer if applicable (not boss)
-  let targetPlayer = null;
-  if (typeof normalizedTargetId === 'number' && gameState.players[normalizedTargetId]) {
-    targetPlayer = gameState.players[normalizedTargetId];
-  }
-
+  if (
+    typeof targetId === "string" &&
+    targetId !== "boss" &&
+    /^\d+$/.test(targetId)
+  )
+    normalizedTargetId = Number(targetId);
+  let targetPlayer =
+    typeof normalizedTargetId === "number"
+      ? gameState.players[normalizedTargetId]
+      : null;
   saveHistory();
-  // consume the ability
   player.abilities.splice(abilityIndex, 1);
-
   let targetName = player.name;
-
   switch (ability) {
-    case 'Stun':
-      if (!targetPlayer) return; // must target a player
-      targetPlayer.statusEffects.push({ type: 'stunned' });
+    case "Stun":
+      if (!targetPlayer) return;
+      targetPlayer.statusEffects.push({ type: "stunned" });
       targetName = targetPlayer.name;
       break;
-
-    case 'Disarm':
-      if (!targetPlayer) return; // must target a player
-      targetPlayer.statusEffects.push({ type: 'disarmed' });
+    case "Disarm":
+      if (!targetPlayer) return;
+      targetPlayer.statusEffects.push({ type: "disarmed" });
       targetName = targetPlayer.name;
       break;
-
-    case 'Increased Damage':
-      player.statusEffects.push({ type: 'damageBoost', multiplier: 1.5 });
+    case "Increased Damage":
+      player.statusEffects.push({ type: "damageBoost", multiplier: 1.5 });
       break;
-
-    case 'Lifesteal':
-      player.statusEffects.push({ type: 'lifesteal', ratio: 0.5 });
+    case "Lifesteal":
+      player.statusEffects.push({ type: "lifesteal", ratio: 0.5 });
       break;
-
-    case 'Redirect Damage':
-      player.statusEffects.push({ type: 'redirect', target: targetId });
+    case "Redirect Damage":
+      player.statusEffects.push({ type: "redirect", target: targetId });
       break;
   }
-
   gameState.lastAction = {
-    type: 'ability',
+    type: "ability",
     casterName: player.name,
     targetName,
     abilityName: ability,
-    effect: ability.toLowerCase().replace(/\s/g, '')
+    effect: ability.toLowerCase().replace(/\s/g, ""),
   };
-  broadcastState();
-  setTimeout(() => { gameState.lastAction = null; broadcastState(); }, 600);
+  broadcastUpdates();
+  setTimeout(() => {
+    gameState.lastAction = null;
+    broadcastUpdates();
+  }, 600);
 }
 
 // ----------------------
 // Socket.io
 // ----------------------
-io.on('connection', socket => {
-  console.log('socket connected', socket.id);
-  socket.emit('state', gameState);
+io.on("connection", (socket) => {
+  console.log("socket connected", socket.id);
+  broadcastUpdates(); // Send everything on connect
 
-  socket.on('initGame', payload => { initGame(payload); broadcastState(); });
-  socket.on('playerAction', payload => {
-    const res = handlePlayerAction(payload);
-    if (res && !res.ok) socket.emit('actionRejected', res);
+  socket.on("initGame", (payload) => {
+    initGame(payload);
+    broadcastUpdates();
   });
-  socket.on('useAbility', payload => handleUseAbility(payload));
+  socket.on("playerAction", (payload) => handlePlayerAction(payload));
+  socket.on("useAbility", (payload) => handleUseAbility(payload));
+  socket.on("undo", () => undo());
 
-  socket.on('action:pvpResult', ({ challengerIndex, opponentIndex, opponentSucceeded }) => {
+  socket.on("showQuestion", (question) => {
+    if (!question) return;
     saveHistory();
-    const dmg = Number(gameState.settings.pvpDamage) || DEFAULT_PVP_DAMAGE;
-    let attacker, defender;
-    if (opponentSucceeded) {
-      [attacker, defender] = [gameState.players[opponentIndex], gameState.players[challengerIndex]];
-    } else {
-      [attacker, defender] = [gameState.players[challengerIndex], gameState.players[opponentIndex]];
-      attacker.damageDealt += dmg;
-    }
-
-    if (defender) {
-      defender.hp = Math.max(0, defender.hp - dmg);
-      const resurrected = checkAndApplyResurrection(defender);
-      gameState.lastAction = { type: 'attack', attacker: attacker.name, target: defender.name, damage: dmg, effect: 'slash', resurrected };
-    }
-
-    checkVictory();
-    broadcastState();
-    gameState.lastAction = null;
+    gameState.currentQuestion = {
+      ...question,
+      selectedAnswerIndex: null,
+      isRevealed: false,
+    };
+    broadcastUpdates();
   });
 
-  socket.on('action:correctAnswer', ({ playerIndex, value, target }) => {
-    const playerId = Number(playerIndex);
-    if (target === 'boss') handlePlayerAction({ playerId, action: 'attackBoss', value });
-    else if (target?.type === 'player') handlePlayerAction({ playerId, action: 'attackPlayer', value, target: target.index });
-  });
-
-  socket.on('action:wrongAnswer', ({ playerIndex, value }) => {
-    handlePlayerAction({ playerId: Number(playerIndex), action: 'wrongAnswer', value });
-  });
-
-  socket.on('action:endTurn', ({ nextTurnIndex } = {}) => {
+  socket.on("hideQuestion", () => {
     saveHistory();
-    if (typeof nextTurnIndex === 'number') gameState.currentPlayerIndex = nextTurnIndex;
-    else nextTurn();
-    checkVictory();
-    broadcastState();
+    gameState.currentQuestion = null;
+    broadcastUpdates();
   });
 
-  socket.on('undo', () => undo());
+  socket.on("selectAnswer", (answerIndex) => {
+    if (gameState.currentQuestion && !gameState.currentQuestion.isRevealed) {
+      saveHistory();
+      gameState.currentQuestion.selectedAnswerIndex = answerIndex;
+      broadcastUpdates();
+    }
+  });
 
-  socket.on('disconnect', () => console.log('socket disconnected', socket.id));
+  socket.on("revealAnswer", async () => {
+    const q = gameState.currentQuestion;
+    if (!q || q.selectedAnswerIndex === null) return;
+    saveHistory();
+    q.isRevealed = true;
+    const questionId = getQuestionId(q);
+    if (questionId && !gameState.answeredQuestions.includes(questionId)) {
+      gameState.answeredQuestions.push(questionId);
+    }
+    const correctIndex = q.options.indexOf(q.answer);
+    const isCorrect = q.selectedAnswerIndex === correctIndex;
+    broadcastUpdates();
+    if (!isCorrect) {
+      await delay(2500);
+      await handlePlayerAction({
+        playerId: gameState.currentPlayerIndex,
+        action: "selfDamage",
+        value: q.points,
+      });
+    }
+  });
+
+  socket.on(
+    "action:pvpResult",
+    ({ challengerIndex, opponentIndex, opponentSucceeded }) => {
+      saveHistory();
+      const dmg = Number(gameState.settings.pvpDamage) || DEFAULT_PVP_DAMAGE;
+      let attacker, defender;
+      if (opponentSucceeded) {
+        [attacker, defender] = [
+          gameState.players[opponentIndex],
+          gameState.players[challengerIndex],
+        ];
+      } else {
+        [attacker, defender] = [
+          gameState.players[challengerIndex],
+          gameState.players[opponentIndex],
+        ];
+        attacker.damageDealt += dmg;
+      }
+      if (defender) {
+        defender.hp = Math.max(0, defender.hp - dmg);
+        const resurrected = checkAndApplyResurrection(defender);
+        gameState.lastAction = {
+          type: "attack",
+          attacker: attacker.name,
+          target: defender.name,
+          damage: dmg,
+          effect: "slash",
+          resurrected,
+        };
+      }
+      checkVictory();
+      broadcastUpdates();
+      gameState.lastAction = null;
+    }
+  );
+
+  socket.on("action:endTurn", () => {
+    saveHistory();
+    nextTurn();
+    checkVictory();
+    broadcastUpdates();
+  });
+
+  socket.on("disconnect", () => console.log("socket disconnected", socket.id));
 });
 
 // ----------------------
 // Server Start
 // ----------------------
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server listening on port ${PORT}`);
 });

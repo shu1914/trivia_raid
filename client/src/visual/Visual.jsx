@@ -1,5 +1,5 @@
 // client/src/visual/Visual.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useGame } from "../state/GameContext";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -42,6 +42,7 @@ const fadeAudio = (audio, toVolume = 1, duration = 1000) => {
 export default function Visual() {
   const g = useGame();
   const st = g.state;
+  const { availableQuestions } = g;
 
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [lastWinner, setLastWinner] = useState(null);
@@ -52,6 +53,25 @@ export default function Visual() {
   const [bossRoared, setBossRoared] = useState(false);
   const [intenseBgmStarted, setIntenseBgmStarted] = useState(false);
   const [victoryBgmStarted, setVictoryBgmStarted] = useState(false);
+
+  const questionCounts = useMemo(() => {
+    if (!availableQuestions) return null;
+    const categories = Object.keys(availableQuestions);
+    if (categories.length === 0) return null;
+
+    const counts = {};
+    for (const category of categories) {
+      counts[category] = {};
+      for (const points in availableQuestions[category]) {
+        counts[category][points] = availableQuestions[category][points].length;
+      }
+    }
+    return {
+      categories: categories.sort(),
+      points: ["2", "4", "6", "8", "10"],
+      counts,
+    };
+  }, [availableQuestions]);
 
   // --- Winner modal logic ---
   useEffect(() => {
@@ -80,7 +100,7 @@ export default function Visual() {
         slashAudio.currentTime = 0;
         slashAudio.play();
       }
-      
+
       if (action.lifestealAmount) {
         healAudio.currentTime = 0;
         healAudio.play();
@@ -90,16 +110,20 @@ export default function Visual() {
         reviveAudio.play();
       }
 
-      setAttacks((prev) => [ ...prev, { id, ...action } ]);
+      setAttacks((prev) => [...prev, { id, ...action }]);
       setShake(true);
       setTimeout(() => setShake(false), 200);
 
-      setTimeout(() => { setAttacks((prev) => prev.filter((a) => a.id !== id)); }, 800);
+      setTimeout(() => {
+        setAttacks((prev) => prev.filter((a) => a.id !== id));
+      }, 800);
     } else if (action.type === "ability" || action.type === "info") {
-        abilityCastAudio.currentTime = 0;
-        abilityCastAudio.play();
-        setEffects(prev => [...prev, { id, ...action }]);
-        setTimeout(() => { setEffects(prev => prev.filter(e => e.id !== id))}, 1000);
+      abilityCastAudio.currentTime = 0;
+      abilityCastAudio.play();
+      setEffects((prev) => [...prev, { id, ...action }]);
+      setTimeout(() => {
+        setEffects((prev) => prev.filter((e) => e.id !== id));
+      }, 1000);
     }
   }, [st?.lastAction]);
 
@@ -108,7 +132,7 @@ export default function Visual() {
     const bossAoEActive = attacks.some((a) => a.effect === "bossAoE");
     if (bossAoEActive) {
       setBossInvisible(true);
-      const timer = setTimeout(() => setBossInvisible(false), 250); 
+      const timer = setTimeout(() => setBossInvisible(false), 250);
       return () => clearTimeout(timer);
     }
   }, [attacks]);
@@ -118,15 +142,12 @@ export default function Visual() {
       slashAudio.play().catch(() => {});
       slashAudio.pause();
       slashAudio.currentTime = 0;
-
       bossAoEAudio.play().catch(() => {});
       bossAoEAudio.pause();
       bossAoEAudio.currentTime = 0;
-      
-      abilityCastAudio.play().catch(()=>{});
+      abilityCastAudio.play().catch(() => {});
       abilityCastAudio.pause();
       abilityCastAudio.currentTime = 0;
-
       window.removeEventListener("click", unlockAudio);
     };
     window.addEventListener("click", unlockAudio);
@@ -135,18 +156,15 @@ export default function Visual() {
   useEffect(() => {
     const bossAoEActive = attacks.some((a) => a.effect === "bossAoE");
     if (bossAoEActive) {
-      // Play roar once at the start of AoE
       if (!bossRoared) {
         bossRoarAudio.currentTime = 0;
         bossRoarAudio.play().catch(() => {});
         setBossRoared(true);
       }
-
       setBossInvisible(true);
-      const timer = setTimeout(() => setBossInvisible(false), 250); 
+      const timer = setTimeout(() => setBossInvisible(false), 250);
       return () => clearTimeout(timer);
     } else {
-      // Reset roar state when no AoE is active
       setBossRoared(false);
     }
   }, [attacks, bossRoared]);
@@ -158,10 +176,7 @@ export default function Visual() {
       bgmAudio.play().catch(() => {});
       window.removeEventListener("click", playBGM);
     };
-
-    // Some browsers block autoplay, so unlock with user interaction
     window.addEventListener("click", playBGM);
-
     return () => {
       bgmAudio.pause();
       bgmAudio.currentTime = 0;
@@ -171,10 +186,7 @@ export default function Visual() {
 
   useEffect(() => {
     if (!st?.boss) return;
-
     const bossHpPercent = st.boss.hp / st.boss.maxHp;
-
-    // Switch to intense BGM below 50%
     if (bossHpPercent <= 0.5 && !intenseBgmStarted) {
       setIntenseBgmStarted(true);
       fadeAudio(bgmAudio, 0, 1000);
@@ -182,13 +194,10 @@ export default function Visual() {
       bossLowHpAudio.play().catch(() => {});
       fadeAudio(bossLowHpAudio, 1, 1000);
     }
-
-    // Boss defeated → victory music
     if (st.boss.hp <= 0 && !victoryBgmStarted) {
       setVictoryBgmStarted(true);
       fadeAudio(bgmAudio, 0, 500);
       fadeAudio(bossLowHpAudio, 0, 500);
-
       victoryAudio.currentTime = 0;
       victoryAudio.play().catch(() => {});
       fadeAudio(victoryAudio, 1, 1000);
@@ -200,7 +209,6 @@ export default function Visual() {
   const leaderboard = [...(st.players || [])]
     .map((p, i) => ({ ...p, index: i }))
     .sort((a, b) => (b.damageDealt || 0) - (a.damageDealt || 0));
-
   const getTargetPosition = (name) => {
     if (!name) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     const el = document.getElementById(`target-${name}`);
@@ -208,7 +216,6 @@ export default function Visual() {
     const rect = el.getBoundingClientRect();
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
   };
-
   const getAttackerPosition = (name) => {
     if (!name) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     const el = document.getElementById(`target-${name}`);
@@ -220,16 +227,33 @@ export default function Visual() {
   const StatusEffectIcons = ({ effects }) => {
     if (!effects?.length) return null;
     return (
-      <div style={{ display: 'flex', gap: 4, marginTop: 4, height: 16, alignItems: 'center', justifyContent: 'center' }}>
-        {effects.map(effect => {
-          let icon = '?';
-          if (effect.type === 'stunned') icon = '😵';
-          if (effect.type === 'disarmed') icon = '⚔️🚫';
-          if (effect.type === 'resurrection') icon = '👼';
-          if (effect.type === 'redirect') icon = '↩️';
-          if (effect.type === 'damageBoost') icon = '🔥';
-          if (effect.type === 'lifesteal') icon = '🩸';
-          return <span key={effect.type} title={effect.type} style={{ fontSize: 14 }}>{icon}</span>;
+      <div
+        style={{
+          display: "flex",
+          gap: 4,
+          marginTop: 4,
+          height: 16,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {effects.map((effect) => {
+          let icon = "?";
+          if (effect.type === "stunned") icon = "😵";
+          if (effect.type === "disarmed") icon = "⚔️🚫";
+          if (effect.type === "resurrection") icon = "👼";
+          if (effect.type === "redirect") icon = "↩️";
+          if (effect.type === "damageBoost") icon = "🔥";
+          if (effect.type === "lifesteal") icon = "🩸";
+          return (
+            <span
+              key={effect.type}
+              title={effect.type}
+              style={{ fontSize: 14 }}
+            >
+              {icon}
+            </span>
+          );
         })}
       </div>
     );
@@ -248,7 +272,6 @@ export default function Visual() {
         transition: "transform 0.05s",
       }}
     >
-      {/* Boss HP and Image */}
       <div
         className="boss-card"
         id={`target-${st.boss.name}`}
@@ -260,7 +283,6 @@ export default function Visual() {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 18 }}>{st.boss.name}</div>
-
         <motion.img
           src="/images/riddlebeast-idle.png"
           alt="Boss"
@@ -281,8 +303,10 @@ export default function Visual() {
             opacity: { duration: 0.05, ease: "easeInOut" },
           }}
         />
-
-        <div className="hpbar" style={{ width: "80%", height: 16, marginBottom: 8 }}>
+        <div
+          className="hpbar"
+          style={{ width: "80%", height: 16, marginBottom: 8 }}
+        >
           <motion.div
             className="hpfill"
             style={{ width: (st.boss.hp / st.boss.maxHp) * 100 + "%" }}
@@ -295,73 +319,152 @@ export default function Visual() {
           />
         </div>
         <div className="muted">
-          HP: {st.boss.hp}/{st.boss.maxHp}
+          {" "}
+          HP: {st.boss.hp}/{st.boss.maxHp}{" "}
         </div>
       </div>
-
-      {/* Players HP Bars (near POV) */}
-      <div className="players-row" style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
-      {st.players.map((p, idx) => (
-        <div
-          key={idx}
-          className="player-card"
-          id={`target-${p.name}`}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            width: 120,
-            padding: 8,
-            borderRadius: 8,
-            background: "#222",
-            color: "#fff",
-            opacity: p.hp <= 0 ? 0.5 : 1,
-            border: st.currentPlayerIndex === idx ? '2px solid yellow' : '2px solid transparent',
-          }}
-        >
-          <img
-            src={p.avatar || "/images/default-avatar.png"} // placeholder icon
-            alt={p.name}
-            style={{ width: 48, height: 48, borderRadius: "50%", marginBottom: 4 }}
-          />
+      <div
+        className="players-row"
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 12,
+          justifyContent: "center",
+        }}
+      >
+        {st.players.map((p, idx) => (
           <div
+            key={idx}
+            className="player-card"
+            id={`target-${p.name}`}
             style={{
-              fontWeight: 700,
-              color: TEAM_COLORS[p.team] || "#fff", // <-- applies team color
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              width: 120,
+              padding: 8,
+              borderRadius: 8,
+              background: "#222",
+              color: "#fff",
+              opacity: p.hp <= 0 ? 0.5 : 1,
+              border:
+                st.currentPlayerIndex === idx
+                  ? "2px solid yellow"
+                  : "2px solid transparent",
             }}
           >
-            {p.name}
-          </div>
-          <StatusEffectIcons effects={p.statusEffects} />
-          <div className="hpbar" style={{ width: "100%", height: 12, marginTop: 4 }}>
-            <motion.div
-              className="hpfill"
-              style={{ width: (p.hp / p.maxHp) * 100 + "%" }}
-              transition={{ duration: 0.5 }}
-              animate={{
-                backgroundColor: attacks.some((a) => a.target === p.name)
-                  ? ["#f00", "#ff0", "#f00"]
-                  : "#2ecc71",
+            <img
+              src={p.avatar || "/images/default-avatar.png"}
+              alt={p.name}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                marginBottom: 4,
               }}
             />
+            <div
+              style={{ fontWeight: 700, color: TEAM_COLORS[p.team] || "#fff" }}
+            >
+              {" "}
+              {p.name}{" "}
+            </div>
+            <StatusEffectIcons effects={p.statusEffects} />
+            <div
+              className="hpbar"
+              style={{ width: "100%", height: 12, marginTop: 4 }}
+            >
+              <motion.div
+                className="hpfill"
+                style={{ width: (p.hp / p.maxHp) * 100 + "%" }}
+                transition={{ duration: 0.5 }}
+                animate={{
+                  backgroundColor: attacks.some((a) => a.target === p.name)
+                    ? ["#f00", "#ff0", "#f00"]
+                    : "#2ecc71",
+                }}
+              />
+            </div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              {" "}
+              HP: {p.hp}/{p.maxHp}{" "}
+            </div>
           </div>
-          <div className="muted" style={{ fontSize: 12 }}>
-            HP: {p.hp}/{p.maxHp}
-          </div>
-        </div>
-      ))}
-
+        ))}
       </div>
-
-      {/* Turn Info */}
       <div style={{ marginTop: 24, textAlign: "center", fontWeight: 700 }}>
+        {" "}
         Turn:{" "}
         {st.players[st.currentPlayerIndex]
           ? st.players[st.currentPlayerIndex].name
-          : "—"}
+          : "—"}{" "}
       </div>
 
-      {/* Leaderboard */}
+      {/* Question Pool Table */}
+      {questionCounts && (
+        <div className="card" style={{ marginTop: 24 }}>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Question Pool</div>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              textAlign: "center",
+            }}
+          >
+            <thead>
+              <tr>
+                <th
+                  style={{
+                    padding: 8,
+                    borderBottom: "1px solid #444",
+                    textAlign: "left",
+                  }}
+                >
+                  Category
+                </th>
+                {questionCounts.points.map((p) => (
+                  <th
+                    key={p}
+                    style={{ padding: 8, borderBottom: "1px solid #444" }}
+                  >
+                    {p} pts
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {questionCounts.categories.map((cat) => (
+                <tr key={cat}>
+                  <td
+                    style={{
+                      padding: 8,
+                      borderBottom: "1px solid #333",
+                      textAlign: "left",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {cat}
+                  </td>
+                  {questionCounts.points.map((p) => (
+                    <td
+                      key={p}
+                      style={{
+                        padding: 8,
+                        borderBottom: "1px solid #333",
+                        fontSize: 18,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {questionCounts.counts[cat]?.[p] || 0}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <div className="card" style={{ marginTop: 24 }}>
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Leaderboard</div>
         <AnimatePresence>
@@ -378,69 +481,266 @@ export default function Visual() {
                 justifyContent: "space-between",
                 padding: 4,
                 fontWeight: 700,
-                color: TEAM_COLORS[p.team] || "#fff", // <-- applies team color
+                color: TEAM_COLORS[p.team] || "#fff",
               }}
             >
               <div>
-                #{i + 1} {p.name}
+                {" "}
+                #{i + 1} {p.name}{" "}
               </div>
               <div className="muted">Damage: {p.damageDealt || 0}</div>
             </motion.div>
           ))}
         </AnimatePresence>
       </div>
-
-      {/* Attack & Effect Animations */}
       <AnimatePresence>
         {attacks.map((atk) => {
           const targetPos = getTargetPosition(atk.target);
           return (
             <React.Fragment key={atk.id}>
+              {" "}
               {atk.effect === "slash" && (
-                <motion.img src="/images/player-attack.gif" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  style={{ position: "fixed", top: targetPos.y-40, left: targetPos.x-40, pointerEvents: "none", zIndex: 1000, width: 80, height: 80 }}
+                <motion.img
+                  src="/images/player-attack.gif"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    position: "fixed",
+                    top: targetPos.y - 40,
+                    left: targetPos.x - 40,
+                    pointerEvents: "none",
+                    zIndex: 1000,
+                    width: 80,
+                    height: 80,
+                  }}
                 />
-              )}
+              )}{" "}
               {atk.effect === "bossAoE" && (
-                <motion.img src="/images/riddlebeast-claw-attack.png"
-                  style={{ position: "fixed", width: 100, height: 100, left: targetPos.x, top: targetPos.y - 200, transform: "translate(-50%, -50%)", zIndex: 1000, filter: "drop-shadow(0 0 10px rgba(255,0,0,0.7))" }}
-                  initial={{ y: 0, opacity: 1 }} animate={{ y: 250, opacity: [1, 0.8, 0] }} transition={{ duration: 0.25, ease: "easeIn" }}
+                <motion.img
+                  src="/images/riddlebeast-claw-attack.png"
+                  style={{
+                    position: "fixed",
+                    width: 100,
+                    height: 100,
+                    left: targetPos.x,
+                    top: targetPos.y - 200,
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 1000,
+                    filter: "drop-shadow(0 0 10px rgba(255,0,0,0.7))",
+                  }}
+                  initial={{ y: 0, opacity: 1 }}
+                  animate={{ y: 250, opacity: [1, 0.8, 0] }}
+                  transition={{ duration: 0.25, ease: "easeIn" }}
                 />
-              )}
-              { atk.damage > 0 && (
-                <motion.div style={{ position: "absolute", top: targetPos.y - 35, left: targetPos.x, fontWeight: "bold", fontSize: 36, color: "white", textShadow: `0 0 8px red, 0 0 12px orange`, pointerEvents: "none", zIndex: 1100, transform: "translate(-50%, -50%)" }}
-                  initial={{ scale: 0, opacity: 1 }} animate={{ y: [0, -60], scale: [0, 1.5, 1.2], opacity: [1, 1, 0] }} transition={{ duration: 0.75, ease: "easeOut" }} >
-                  -{atk.damage}
+              )}{" "}
+              {atk.damage > 0 && (
+                <motion.div
+                  style={{
+                    position: "absolute",
+                    top: targetPos.y - 35,
+                    left: targetPos.x,
+                    fontWeight: "bold",
+                    fontSize: 36,
+                    color: "white",
+                    textShadow: `0 0 8px red, 0 0 12px orange`,
+                    pointerEvents: "none",
+                    zIndex: 1100,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                  initial={{ scale: 0, opacity: 1 }}
+                  animate={{
+                    y: [0, -60],
+                    scale: [0, 1.5, 1.2],
+                    opacity: [1, 1, 0],
+                  }}
+                  transition={{ duration: 0.75, ease: "easeOut" }}
+                >
+                  {" "}
+                  -{atk.damage}{" "}
                 </motion.div>
-              )}
-              { atk.lifestealAmount > 0 && (
-                 <motion.div style={{ position: "absolute", top: getAttackerPosition(atk.attacker).y - 35, left: getAttackerPosition(atk.attacker).x, fontWeight: "bold", fontSize: 28, color: "lime", textShadow: `0 0 8px green`, pointerEvents: "none", zIndex: 1100, transform: "translate(-50%, -50%)" }}
-                 initial={{ scale: 0, opacity: 1 }} animate={{ y: [0, -40], scale: [0, 1.2], opacity: [1, 1, 0] }} transition={{ duration: 0.75, ease: "easeOut" }} >
-                 +{atk.lifestealAmount}
-               </motion.div>
-              )}
-              { atk.resurrected && (
-                 <motion.div style={{ position: "absolute", top: targetPos.y, left: targetPos.x, fontWeight: "bold", fontSize: 24, color: "gold", textShadow: `0 0 8px white`, pointerEvents: "none", zIndex: 1100, transform: "translate(-50%, -50%)" }}
-                 initial={{ scale: 0, opacity: 1 }} animate={{ y: [0, -50], scale: [0, 1.3], opacity: [1, 1, 0] }} transition={{ duration: 0.9, ease: "easeOut" }} >
-                 REVIVED!
-               </motion.div>
-              )}
+              )}{" "}
+              {atk.lifestealAmount > 0 && (
+                <motion.div
+                  style={{
+                    position: "absolute",
+                    top: getAttackerPosition(atk.attacker).y - 35,
+                    left: getAttackerPosition(atk.attacker).x,
+                    fontWeight: "bold",
+                    fontSize: 28,
+                    color: "lime",
+                    textShadow: `0 0 8px green`,
+                    pointerEvents: "none",
+                    zIndex: 1100,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                  initial={{ scale: 0, opacity: 1 }}
+                  animate={{ y: [0, -40], scale: [0, 1.2], opacity: [1, 1, 0] }}
+                  transition={{ duration: 0.75, ease: "easeOut" }}
+                >
+                  {" "}
+                  +{atk.lifestealAmount}{" "}
+                </motion.div>
+              )}{" "}
+              {atk.resurrected && (
+                <motion.div
+                  style={{
+                    position: "absolute",
+                    top: targetPos.y,
+                    left: targetPos.x,
+                    fontWeight: "bold",
+                    fontSize: 24,
+                    color: "gold",
+                    textShadow: `0 0 8px white`,
+                    pointerEvents: "none",
+                    zIndex: 1100,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                  initial={{ scale: 0, opacity: 1 }}
+                  animate={{ y: [0, -50], scale: [0, 1.3], opacity: [1, 1, 0] }}
+                  transition={{ duration: 0.9, ease: "easeOut" }}
+                >
+                  {" "}
+                  REVIVED!{" "}
+                </motion.div>
+              )}{" "}
             </React.Fragment>
           );
         })}
         {effects.map((effect) => {
-            const targetPos = getTargetPosition(effect.targetName);
-            return (
-                <motion.div key={effect.id}
-                    style={{ position: 'absolute', top: targetPos.y, left: targetPos.x, fontWeight: 'bold', fontSize: 24, color: '#88aaff', textShadow: '0 0 8px blue', pointerEvents: 'none', zIndex: 1100, transform: 'translate(-50%, -50%)' }}
-                    initial={{ scale: 0, opacity: 1 }} animate={{ y: [0, -50], scale: [0, 1.2], opacity: [1, 0] }} transition={{ duration: 1, ease: 'easeOut' }}>
-                    {effect.abilityName || effect.message}
-                </motion.div>
-            );
+          const targetPos = getTargetPosition(effect.targetName);
+          return (
+            <motion.div
+              key={effect.id}
+              style={{
+                position: "absolute",
+                top: targetPos.y,
+                left: targetPos.x,
+                fontWeight: "bold",
+                fontSize: 24,
+                color: "#88aaff",
+                textShadow: "0 0 8px blue",
+                pointerEvents: "none",
+                zIndex: 1100,
+                transform: "translate(-50%, -50%)",
+              }}
+              initial={{ scale: 0, opacity: 1 }}
+              animate={{ y: [0, -50], scale: [0, 1.2], opacity: [1, 0] }}
+              transition={{ duration: 1, ease: "easeOut" }}
+            >
+              {" "}
+              {effect.abilityName || effect.message}{" "}
+            </motion.div>
+          );
         })}
       </AnimatePresence>
-
-      {/* Winner Modal */}
+      <AnimatePresence>
+        {st.currentQuestion && (
+          <div
+            className="modal-backdrop"
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(5px)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1900,
+            }}
+          >
+            <motion.div
+              className="modal-content"
+              style={{
+                background: "linear-gradient(145deg, #2c3e50, #34495e)",
+                color: "white",
+                padding: "24px 32px",
+                borderRadius: 16,
+                width: "clamp(300px, 90vw, 800px)",
+                textAlign: "center",
+                boxShadow: "0 0 20px rgba(0, 0, 0, 0.5)",
+                border: "2px solid #7f8c8d",
+              }}
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.7, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              <div
+                style={{
+                  color: "#f1c40f",
+                  fontWeight: "bold",
+                  fontSize: 20,
+                  marginBottom: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                }}
+              >
+                {" "}
+                {st.currentQuestion.category} &mdash;{" "}
+                {st.currentQuestion.points} Points{" "}
+              </div>
+              <h2 style={{ fontSize: 28, margin: "16px 0", lineHeight: 1.3 }}>
+                {" "}
+                {st.currentQuestion.question}{" "}
+              </h2>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                  gap: "12px",
+                  marginTop: 24,
+                  fontSize: 20,
+                }}
+              >
+                {st.currentQuestion.options.map((option, index) => {
+                  const isSelected =
+                    st.currentQuestion.selectedAnswerIndex === index;
+                  const isRevealed = st.currentQuestion.isRevealed;
+                  const isCorrect =
+                    isRevealed &&
+                    st.currentQuestion.options.indexOf(
+                      st.currentQuestion.answer
+                    ) === index;
+                  const isWrongSelection =
+                    isRevealed && isSelected && !isCorrect;
+                  const baseStyle = {
+                    padding: "12px",
+                    borderRadius: 8,
+                    transition: "all 0.3s ease",
+                    transform: "scale(1)",
+                    border: "2px solid #4a627a",
+                  };
+                  if (!isRevealed && isSelected) {
+                    baseStyle.background = "#3498db";
+                    baseStyle.transform = "scale(1.05)";
+                    baseStyle.borderColor = "#fff";
+                  }
+                  if (isCorrect) {
+                    baseStyle.background = "#27ae60";
+                    baseStyle.borderColor = "#fff";
+                  }
+                  if (isWrongSelection) {
+                    baseStyle.background = "#c0392b";
+                  }
+                  return (
+                    <div key={index} style={baseStyle}>
+                      {" "}
+                      <span style={{ fontWeight: "bold" }}>
+                        {String.fromCharCode(65 + index)}:
+                      </span>{" "}
+                      {option}{" "}
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       {showWinnerModal && st.winner && (
         <div
           className="modal-backdrop"
@@ -459,6 +759,7 @@ export default function Visual() {
           }}
           onClick={() => setShowWinnerModal(false)}
         >
+          {" "}
           <motion.div
             className="modal-content"
             style={{
@@ -477,7 +778,7 @@ export default function Visual() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Confetti circles */}
+            {" "}
             {Array.from({ length: 30 }).map((_, i) => (
               <motion.div
                 key={i}
@@ -491,38 +792,48 @@ export default function Visual() {
                   left: Math.random() * 100 + "%",
                 }}
                 animate={{ y: [0, 300], opacity: [1, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, delay: Math.random() }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: Math.random(),
+                }}
               />
-            ))}
-
-            <h2 style={{
-              fontSize: 32,
-              fontWeight: "900",
-              color: "#fff",
-              textShadow: "0 0 10px #fff, 0 0 20px gold, 0 0 30px orange",
-            }}>Winner</h2>
-
-            <p style={{
-              fontWeight: 900,
-              fontSize: 28,
-              margin: "12px 0",
-              color: "#fff",
-              textShadow: "0 0 8px #fff, 0 0 12px #ff0, 0 0 16px #f00",
-            }}>
-              {st.winner}
-            </p>
-
-            <p style={{
-              fontStyle: "italic",
-              fontWeight: 700,
-              fontSize: 16,
-              color: "#fff",
-              marginBottom: 16,
-              textShadow: "0 0 6px #000",
-            }}>
-              You deserved this victory!
-            </p>
-
+            ))}{" "}
+            <h2
+              style={{
+                fontSize: 32,
+                fontWeight: "900",
+                color: "#fff",
+                textShadow: "0 0 10px #fff, 0 0 20px gold, 0 0 30px orange",
+              }}
+            >
+              Winner
+            </h2>{" "}
+            <p
+              style={{
+                fontWeight: 900,
+                fontSize: 28,
+                margin: "12px 0",
+                color: "#fff",
+                textShadow: "0 0 8px #fff, 0 0 12px #ff0, 0 0 16px #f00",
+              }}
+            >
+              {" "}
+              {st.winner}{" "}
+            </p>{" "}
+            <p
+              style={{
+                fontStyle: "italic",
+                fontWeight: 700,
+                fontSize: 16,
+                color: "#fff",
+                marginBottom: 16,
+                textShadow: "0 0 6px #000",
+              }}
+            >
+              {" "}
+              You deserved this victory!{" "}
+            </p>{" "}
             <motion.button
               className="btn"
               style={{
@@ -541,9 +852,10 @@ export default function Visual() {
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowWinnerModal(false)}
             >
-              Close
-            </motion.button>
-          </motion.div>
+              {" "}
+              Close{" "}
+            </motion.button>{" "}
+          </motion.div>{" "}
         </div>
       )}
     </div>

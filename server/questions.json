@@ -1,0 +1,61 @@
+{
+  "Entertainment": {
+    "2": [
+      {
+        "question": "Who wrote the 'Harry Potter' series of books?",
+        "options": ["J.R.R. Tolkien", "George R.R. Martin", "J.K. Rowling", "Stephen King"],
+        "answer": "J.K. Rowling"
+      }
+    ],
+    "4": [
+      {
+        "question": "Which movie won the first-ever Academy Award for Best Picture in 1929?",
+        "options": ["The Artist", "Wings", "Sunrise", "Metropolis"],
+        "answer": "Wings"
+      }
+    ]
+  },
+  "General Trivia": {
+    "6": [
+      {
+        "question": "What is the capital of Australia?",
+        "options": ["Sydney", "Melbourne", "Canberra", "Perth"],
+        "answer": "Canberra"
+      }
+    ],
+    "8": [
+      {
+        "question": "Which planet is known as the Red Planet?",
+        "options": ["Venus", "Mars", "Jupiter", "Saturn"],
+        "answer": "Mars"
+      }
+    ]
+  },
+  "Pop Culture": {
+    "8": [
+       {
+        "question": "In the TV series 'Stranger Things', what is the name of the parallel dimension?",
+        "options": ["The Other Side", "The Nether", "The Underworld", "The Upside Down"],
+        "answer": "The Upside Down"
+      }
+    ]
+  },
+  "Mythology": {
+    "10": [
+      {
+        "question": "In Greek mythology, who is the god of the sea?",
+        "options": ["Zeus", "Hades", "Poseidon", "Ares"],
+        "answer": "Poseidon"
+      }
+    ]
+  },
+  "Random": {
+    "2": [
+      {
+        "question": "How many hearts does an octopus have?",
+        "options": ["One", "Two", "Three", "Four"],
+        "answer": "Three"
+      }
+    ]
+  }
+}
