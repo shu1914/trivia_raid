@@ -3,35 +3,67 @@ import React, { useState, useMemo } from 'react';
 import { useGame } from '../state/GameContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const ALL_ABILITIES = ['Redirect Damage', 'Disarm', 'Stun', 'Increased Damage', 'Lifesteal', 'Resurrection'];
+const ANYTIME_ABILITIES = ['Redirect Damage', 'Disarm', 'Stun'];
+const TURN_ONLY_ABILITIES = ['Increased Damage', 'Lifesteal'];
+const TEAM_NAMES = ["Team A", "Team B", "Team C", "Team D", "Team E"];
+
 export default function Control() {
   const g = useGame();
   const st = g?.state;
   const socket = g?.socket;
-  const winnerExists = !!st?.winner;
 
+  // Init state
   const [names, setNames] = useState(['Team A', 'Team B', 'Team C', 'Team D', 'Team E']);
   const [bossHp, setBossHp] = useState(75);
+  const [abilityAssignments, setAbilityAssignments] = useState({});
+  const uniqueTeams = useMemo(() => [...new Set(names.filter(Boolean).map((_, i) => TEAM_NAMES[i % TEAM_NAMES.length]))], [names]);
+
+  // Turn action state
   const [selectedPoints, setSelectedPoints] = useState(6);
+  const [selectedAbility, setSelectedAbility] = useState(null);
+  
+  // Anytime action state
+  const [anytimeCasterIndex, setAnytimeCasterIndex] = useState('');
+  const [anytimeTarget, setAnytimeTarget] = useState('');
+  
+  // PvP State
   const [challenger, setChallenger] = useState(null);
   const [opponent, setOpponent] = useState(null);
   const pointsOptions = useMemo(() => [2, 4, 6, 8, 10], []);
 
-  // Initialize game (host)
   const init = () => {
-    const players = names.filter(Boolean).map((n, i) => ({ name: n }));
+    const players = names.filter(Boolean).map((n) => ({ name: n }));
     if (!socket) return alert('Not connected to server');
-    socket.emit('initGame', { players, bossHp, bossName: 'Riddlebeast' });
+    socket.emit('initGame', { players, bossHp, bossName: 'Riddlebeast', abilityAssignments });
   };
 
-  // Actions for the CURRENT player (server enforces turn order)
-  function getCurrentPlayerIndex() {
-    return st?.currentPlayerIndex ?? null;
-  }
+  const getCurrentPlayerIndex = () => st?.currentPlayerIndex ?? null;
+  const getCurrentPlayerName = () => st?.players[getCurrentPlayerIndex()]?.name ?? '—';
+  const currentPlayer = useMemo(() => st?.players[getCurrentPlayerIndex()], [st?.currentPlayerIndex, st?.players]);
 
-  function getCurrentPlayerName() {
-    const idx = getCurrentPlayerIndex();
-    return (st && typeof idx === 'number' && st.players[idx]) ? st.players[idx].name : '—';
-  }
+  const handleUseTurnAbility = () => {
+    if (!selectedAbility || !socket) return;
+    socket.emit('useAbility', {
+      playerId: getCurrentPlayerIndex(),
+      ability: selectedAbility,
+    });
+    setSelectedAbility(null);
+  };
+  
+  const anytimeCaster = useMemo(() => st?.players[Number(anytimeCasterIndex)], [st?.players, anytimeCasterIndex]);
+  const anytimeAbility = useMemo(() => anytimeCaster?.abilities.find(ab => ANYTIME_ABILITIES.includes(ab)), [anytimeCaster]);
+
+  const handleUseAnytimeAbility = () => {
+    if (!anytimeAbility || anytimeTarget === '' || !socket) return alert('Caster, ability, and target must be selected.');
+    socket.emit('useAbility', {
+      playerId: Number(anytimeCasterIndex),
+      ability: anytimeAbility,
+      targetId: anytimeTarget,
+    });
+    setAnytimeCasterIndex('');
+    setAnytimeTarget('');
+  };
 
   const handleAttackBoss = () => {
     const idx = getCurrentPlayerIndex();
@@ -104,25 +136,20 @@ export default function Control() {
       {/* Game init */}
       <div className="card">
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Game Init</div>
-        <div className="controls">
-          {names.map((n, i) => (
-            <input
-              key={i}
-              value={names[i]}
-              onChange={e => {
-                const copy = [...names];
-                copy[i] = e.target.value;
-                setNames(copy);
-              }}
-              placeholder={`Player ${i}`}
-            />
-          ))}
-          <div style={{ marginTop: 8 }}>
-            <label className="muted">Boss HP: </label>
-            <input value={bossHp} onChange={e => setBossHp(Number(e.target.value))} style={{ width: 100 }} />
-          </div>
-          <button className="btn" onClick={init} style={{ marginTop: 8 }}>Initialize Game</button>
-        </div>
+        {names.map((n, i) => ( <input key={i} value={names[i]} onChange={e => { const copy = [...names]; copy[i] = e.target.value; setNames(copy); }} placeholder={`Player ${i+1}`} /> ))}
+        <div style={{ marginTop: 8 }}> <label className="muted">Boss HP: </label> <input value={bossHp} onChange={e => setBossHp(Number(e.target.value))} style={{ width: 100 }} /> </div>
+        
+        <div style={{ fontWeight: 700, marginTop: 16, marginBottom: 8 }}>Ability Assignments</div>
+        {uniqueTeams.map(team => (
+            <div key={team} style={{marginBottom: 4}}>
+                <label className="muted" style={{display: 'inline-block', width: 80}}>{team}: </label>
+                <select value={abilityAssignments[team] || ''} onChange={e => setAbilityAssignments(prev => ({ ...prev, [team]: e.target.value }))}>
+                    <option value="">— Select Ability —</option>
+                    {ALL_ABILITIES.map(ab => (<option key={ab} value={ab}>{ab}</option>))}
+                </select>
+            </div>
+        ))}
+        <button className="btn" onClick={init} style={{ marginTop: 8 }}>Initialize Game</button>
       </div>
 
       {/* Current turn */}
@@ -165,6 +192,45 @@ export default function Control() {
 
           <button className="btn" onClick={handleWrong} style={{ marginTop: 8 }}>Apply Wrong Answer (self damage)</button>
         </div>
+
+        {/* Turn-Only Abilities */}
+        {currentPlayer?.abilities.some(ab => TURN_ONLY_ABILITIES.includes(ab)) && (
+            <div style={{marginTop: 12}}>
+                <label className="muted">Use Ability:</label>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                    {currentPlayer.abilities.filter(ab => TURN_ONLY_ABILITIES.includes(ab)).map(ability => (
+                        <button key={ability} className={`btn small ${selectedAbility === ability ? 'active' : ''}`} onClick={() => setSelectedAbility(ability)}>{ability}</button>
+                    ))}
+                </div>
+                {selectedAbility && <button className="btn" onClick={handleUseTurnAbility} style={{ marginTop: 8 }}>Use {selectedAbility}</button>}
+            </div>
+        )}
+      </div>
+      
+      {/* Anytime Abilities */}
+      <div className="card" style={{ marginTop: 12 }}>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>Anytime Abilities</div>
+        <div><label className="muted">Caster: </label>
+          <select value={anytimeCasterIndex} onChange={e => { setAnytimeCasterIndex(e.target.value); setAnytimeTarget(''); }}>
+              <option value="">— Select Player —</option>
+              {st?.players?.filter(p => p.hp > 0 && p.abilities.some(ab => ANYTIME_ABILITIES.includes(ab))).map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.abilities.find(ab => ANYTIME_ABILITIES.includes(ab))})</option>
+              ))}
+          </select>
+        </div>
+        {anytimeAbility && (
+            <div style={{marginTop: 8}}>
+                <label className="muted">{anytimeAbility === 'Redirect Damage' ? 'Redirect to:' : 'Target:'} </label>
+                <select value={anytimeTarget} onChange={e => setAnytimeTarget(e.target.value)}>
+                    <option value="">— Select Target —</option>
+                    {anytimeAbility === 'Redirect Damage' && <option value="boss">Boss: {st.boss.name}</option>}
+                    {st.players.filter(p => p.hp > 0 && p.id !== Number(anytimeCasterIndex)).map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                </select>
+                <button className="btn" onClick={handleUseAnytimeAbility} style={{ marginTop: 8 }}>Use {anytimeAbility}</button>
+            </div>
+        )}
       </div>
 
       {/* PvP */}

@@ -15,6 +15,10 @@ const TEAM_COLORS = {
 const slashAudio = new Audio("/sfx/player-attack.mp3");
 const bossAoEAudio = new Audio("/sfx/riddlebeast-claw-attack.mp3");
 const bossRoarAudio = new Audio("/sfx/riddlebeast-roar.mp3");
+const abilityCastAudio = new Audio("/sfx/ability-cast.mp3");
+const healAudio = new Audio("/sfx/heal.mp3");
+const reviveAudio = new Audio("/sfx/revive.mp3");
+
 const bgmAudio = new Audio("/bgm/boss-okay-bgm.mp3");
 const bossLowHpAudio = new Audio("/bgm/boss-near-death.mp3");
 const victoryAudio = new Audio("/bgm/player-victory.mp3");
@@ -42,6 +46,7 @@ export default function Visual() {
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [lastWinner, setLastWinner] = useState(null);
   const [attacks, setAttacks] = useState([]);
+  const [effects, setEffects] = useState([]);
   const [shake, setShake] = useState(false);
   const [bossInvisible, setBossInvisible] = useState(false);
   const [bossRoared, setBossRoared] = useState(false);
@@ -60,13 +65,14 @@ export default function Visual() {
     }
   }, [st, lastWinner]);
 
-  // --- Watch for attacks ---
+  // --- Watch for attacks and abilities ---
   useEffect(() => {
-    if (!st) return;
-    if (st.lastAction && st.lastAction.type === "attack") {
-      const action = st.lastAction;
-      const id = Date.now();
+    if (!st || !st.lastAction) return;
 
+    const action = st.lastAction;
+    const id = Date.now() + Math.random();
+
+    if (action.type === "attack") {
       if (action.effect === "bossAoE") {
         bossAoEAudio.currentTime = 0;
         bossAoEAudio.play();
@@ -74,24 +80,26 @@ export default function Visual() {
         slashAudio.currentTime = 0;
         slashAudio.play();
       }
+      
+      if (action.lifestealAmount) {
+        healAudio.currentTime = 0;
+        healAudio.play();
+      }
+      if (action.resurrected) {
+        reviveAudio.currentTime = 0;
+        reviveAudio.play();
+      }
 
-      setAttacks((prev) => [
-        ...prev,
-        {
-          id,
-          attackerName: action.attacker,
-          targetName: action.target,
-          damage: action.damage,
-          effect: action.effect || "slash",
-        },
-      ]);
-
+      setAttacks((prev) => [ ...prev, { id, ...action } ]);
       setShake(true);
       setTimeout(() => setShake(false), 200);
 
-      setTimeout(() => {
-        setAttacks((prev) => prev.filter((a) => a.id !== id));
-      }, 800);
+      setTimeout(() => { setAttacks((prev) => prev.filter((a) => a.id !== id)); }, 800);
+    } else if (action.type === "ability" || action.type === "info") {
+        abilityCastAudio.currentTime = 0;
+        abilityCastAudio.play();
+        setEffects(prev => [...prev, { id, ...action }]);
+        setTimeout(() => { setEffects(prev => prev.filter(e => e.id !== id))}, 1000);
     }
   }, [st?.lastAction]);
 
@@ -114,6 +122,10 @@ export default function Visual() {
       bossAoEAudio.play().catch(() => {});
       bossAoEAudio.pause();
       bossAoEAudio.currentTime = 0;
+      
+      abilityCastAudio.play().catch(()=>{});
+      abilityCastAudio.pause();
+      abilityCastAudio.currentTime = 0;
 
       window.removeEventListener("click", unlockAudio);
     };
@@ -190,18 +202,37 @@ export default function Visual() {
     .sort((a, b) => (b.damageDealt || 0) - (a.damageDealt || 0));
 
   const getTargetPosition = (name) => {
+    if (!name) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     const el = document.getElementById(`target-${name}`);
     if (!el) return { x: 0, y: 0 };
     const rect = el.getBoundingClientRect();
-    console.log("target name: ", name, ", rect.x: ", rect.x);
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
   };
 
   const getAttackerPosition = (name) => {
+    if (!name) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     const el = document.getElementById(`target-${name}`);
     if (!el) return { x: 50, y: window.innerHeight - 50 };
     const rect = el.getBoundingClientRect();
     return { x: rect.left + rect.width / 2, y: rect.top - 10 };
+  };
+
+  const StatusEffectIcons = ({ effects }) => {
+    if (!effects?.length) return null;
+    return (
+      <div style={{ display: 'flex', gap: 4, marginTop: 4, height: 16, alignItems: 'center', justifyContent: 'center' }}>
+        {effects.map(effect => {
+          let icon = '?';
+          if (effect.type === 'stunned') icon = '😵';
+          if (effect.type === 'disarmed') icon = '⚔️🚫';
+          if (effect.type === 'resurrection') icon = '👼';
+          if (effect.type === 'redirect') icon = '↩️';
+          if (effect.type === 'damageBoost') icon = '🔥';
+          if (effect.type === 'lifesteal') icon = '🩸';
+          return <span key={effect.type} title={effect.type} style={{ fontSize: 14 }}>{icon}</span>;
+        })}
+      </div>
+    );
   };
 
   return (
@@ -257,7 +288,7 @@ export default function Visual() {
             style={{ width: (st.boss.hp / st.boss.maxHp) * 100 + "%" }}
             transition={{ duration: 0.5 }}
             animate={{
-              backgroundColor: attacks.some((a) => a.targetName === st.boss.name)
+              backgroundColor: attacks.some((a) => a.target === st.boss.name)
                 ? ["#f00", "#ff0", "#f00"]
                 : "#e74c3c",
             }}
@@ -284,6 +315,8 @@ export default function Visual() {
             borderRadius: 8,
             background: "#222",
             color: "#fff",
+            opacity: p.hp <= 0 ? 0.5 : 1,
+            border: st.currentPlayerIndex === idx ? '2px solid yellow' : '2px solid transparent',
           }}
         >
           <img
@@ -299,13 +332,14 @@ export default function Visual() {
           >
             {p.name}
           </div>
+          <StatusEffectIcons effects={p.statusEffects} />
           <div className="hpbar" style={{ width: "100%", height: 12, marginTop: 4 }}>
             <motion.div
               className="hpfill"
               style={{ width: (p.hp / p.maxHp) * 100 + "%" }}
               transition={{ duration: 0.5 }}
               animate={{
-                backgroundColor: attacks.some((a) => a.targetName === p.name)
+                backgroundColor: attacks.some((a) => a.target === p.name)
                   ? ["#f00", "#ff0", "#f00"]
                   : "#2ecc71",
               }}
@@ -356,99 +390,53 @@ export default function Visual() {
         </AnimatePresence>
       </div>
 
-      {/* Attack Animations */}
+      {/* Attack & Effect Animations */}
       <AnimatePresence>
         {attacks.map((atk) => {
-          const attackerPos = getAttackerPosition(atk.attackerName);
-          const targetPos = getTargetPosition(atk.targetName);
-
-          const targetEl = document.getElementById(`target-${atk.targetName}`);
-
+          const targetPos = getTargetPosition(atk.target);
           return (
             <React.Fragment key={atk.id}>
-              {/* Slash */}
               {atk.effect === "slash" && (
-                <motion.img
-                  src="/images/player-attack.gif"
-                  initial={{ opacity: 0, scale: 2 }}
-                  animate={{ opacity: 1, scale: 2 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.025, ease: "easeOut" }}
-                  style={{
-                    position: "fixed",
-                    top: targetPos.y,
-                    left: targetPos.x,
-                    pointerEvents: "none",
-                    zIndex: 1000,
-                    width: 80, // adjust to GIF size
-                    height: 16, // adjust to GIF size
-                    transform: "rotate(-20deg)", // keep tilt if needed
-                  }}
+                <motion.img src="/images/player-attack.gif" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  style={{ position: "fixed", top: targetPos.y-40, left: targetPos.x-40, pointerEvents: "none", zIndex: 1000, width: 80, height: 80 }}
                 />
               )}
-
-              {/* Boss AoE effect */}
-              {atk.effect === "bossAoE" && targetEl && (
-                <motion.img
-                  src="/images/riddlebeast-claw-attack.png"
-                  alt="Boss AoE"
-                  style={{
-                    position: "fixed",
-                    width: 100,
-                    height: 100,
-                    left: targetPos.x,
-                    top: targetPos.y - 200,
-                    transform: "translate(-50%, -50%)",
-                    zIndex: 1000,
-                    filter: "drop-shadow(0 0 10px rgba(255,0,0,0.7))",
-                  }}
-                  initial={{ scale: 1, rotate: 0, opacity: 1, skewY: 0 }}
-                  animate={{
-                    y: [0, 250],
-                    scale: [1, 2, 0.5],
-                    skewY: [0, 15, -15],
-                    opacity: [1, 0.8, 0],
-                  }}
-                  transition={{ duration: 0.25, ease: "easeIn" }}
+              {atk.effect === "bossAoE" && (
+                <motion.img src="/images/riddlebeast-claw-attack.png"
+                  style={{ position: "fixed", width: 100, height: 100, left: targetPos.x, top: targetPos.y - 200, transform: "translate(-50%, -50%)", zIndex: 1000, filter: "drop-shadow(0 0 10px rgba(255,0,0,0.7))" }}
+                  initial={{ y: 0, opacity: 1 }} animate={{ y: 250, opacity: [1, 0.8, 0] }} transition={{ duration: 0.25, ease: "easeIn" }}
                 />
               )}
-
-              {/* Damage numbers */}
-              <motion.div
-                style={{
-                  position: "absolute",
-                  top: targetPos.y - 35,
-                  left: targetPos.x,
-                  fontWeight: "bold",
-                  fontSize: 36,
-                  color: "white",
-                  textShadow: `
-                    0 0 8px red,
-                    0 0 12px orange,
-                    0 0 16px yellow
-                  `,
-                  pointerEvents: "none",
-                  zIndex: 1100,
-                  transform: "translate(-50%, -50%)",
-                }}
-                initial={{ scale: 0, rotate: 0, opacity: 1 }}
-                animate={{
-                  y: [0, -30, -60],
-                  scale: [0, 1.5, 1.2],
-                  rotate: [0, -15 + Math.random() * 30, 0],
-                  opacity: [1, 1, 0],
-                  color: ["#fff", "#ff0", "#f00"],
-                }}
-                transition={{
-                  duration: 0.75,
-                  ease: "easeOut",
-                }}
-              >
-                -{atk.damage}
-              </motion.div>
-
+              { atk.damage > 0 && (
+                <motion.div style={{ position: "absolute", top: targetPos.y - 35, left: targetPos.x, fontWeight: "bold", fontSize: 36, color: "white", textShadow: `0 0 8px red, 0 0 12px orange`, pointerEvents: "none", zIndex: 1100, transform: "translate(-50%, -50%)" }}
+                  initial={{ scale: 0, opacity: 1 }} animate={{ y: [0, -60], scale: [0, 1.5, 1.2], opacity: [1, 1, 0] }} transition={{ duration: 0.75, ease: "easeOut" }} >
+                  -{atk.damage}
+                </motion.div>
+              )}
+              { atk.lifestealAmount > 0 && (
+                 <motion.div style={{ position: "absolute", top: getAttackerPosition(atk.attacker).y - 35, left: getAttackerPosition(atk.attacker).x, fontWeight: "bold", fontSize: 28, color: "lime", textShadow: `0 0 8px green`, pointerEvents: "none", zIndex: 1100, transform: "translate(-50%, -50%)" }}
+                 initial={{ scale: 0, opacity: 1 }} animate={{ y: [0, -40], scale: [0, 1.2], opacity: [1, 1, 0] }} transition={{ duration: 0.75, ease: "easeOut" }} >
+                 +{atk.lifestealAmount}
+               </motion.div>
+              )}
+              { atk.resurrected && (
+                 <motion.div style={{ position: "absolute", top: targetPos.y, left: targetPos.x, fontWeight: "bold", fontSize: 24, color: "gold", textShadow: `0 0 8px white`, pointerEvents: "none", zIndex: 1100, transform: "translate(-50%, -50%)" }}
+                 initial={{ scale: 0, opacity: 1 }} animate={{ y: [0, -50], scale: [0, 1.3], opacity: [1, 1, 0] }} transition={{ duration: 0.9, ease: "easeOut" }} >
+                 REVIVED!
+               </motion.div>
+              )}
             </React.Fragment>
           );
+        })}
+        {effects.map((effect) => {
+            const targetPos = getTargetPosition(effect.targetName);
+            return (
+                <motion.div key={effect.id}
+                    style={{ position: 'absolute', top: targetPos.y, left: targetPos.x, fontWeight: 'bold', fontSize: 24, color: '#88aaff', textShadow: '0 0 8px blue', pointerEvents: 'none', zIndex: 1100, transform: 'translate(-50%, -50%)' }}
+                    initial={{ scale: 0, opacity: 1 }} animate={{ y: [0, -50], scale: [0, 1.2], opacity: [1, 0] }} transition={{ duration: 1, ease: 'easeOut' }}>
+                    {effect.abilityName || effect.message}
+                </motion.div>
+            );
         })}
       </AnimatePresence>
 
