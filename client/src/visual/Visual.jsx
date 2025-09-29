@@ -685,16 +685,14 @@ export default function Visual() {
             className="modal-backdrop"
             style={{
               position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              inset: 0,
               background: "rgba(0,0,0,0.85)",
               backdropFilter: "blur(5px)",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               zIndex: 1900,
+              overflow: "hidden",
             }}
           >
             <motion.div
@@ -705,9 +703,12 @@ export default function Visual() {
                 padding: "24px 32px",
                 borderRadius: 16,
                 width: "clamp(300px, 90vw, 800px)",
+                maxHeight: "90vh",
+                overflowY: "auto",
                 textAlign: "center",
                 boxShadow: "0 0 20px rgba(0, 0, 0, 0.5)",
                 border: "2px solid #7f8c8d",
+                transform: "translateY(-5%)",
               }}
               initial={{ scale: 0.7, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -724,14 +725,14 @@ export default function Visual() {
                   letterSpacing: "1px",
                 }}
               >
-                {" "}
                 {st.currentQuestion.category} &mdash;{" "}
-                {st.currentQuestion.points} Points{" "}
+                {st.currentQuestion.points} Points
               </div>
+
               <h2 style={{ fontSize: 28, margin: "16px 0", lineHeight: 1.3 }}>
-                {" "}
-                {st.currentQuestion.question}{" "}
+                {st.currentQuestion.question}
               </h2>
+
               <div
                 style={{
                   display: "grid",
@@ -752,6 +753,7 @@ export default function Visual() {
                     ) === index;
                   const isWrongSelection =
                     isRevealed && isSelected && !isCorrect;
+
                   const baseStyle = {
                     padding: "12px",
                     borderRadius: 8,
@@ -771,13 +773,13 @@ export default function Visual() {
                   if (isWrongSelection) {
                     baseStyle.background = "#c0392b";
                   }
+
                   return (
                     <div key={index} style={baseStyle}>
-                      {" "}
                       <span style={{ fontWeight: "bold" }}>
                         {String.fromCharCode(65 + index)}:
                       </span>{" "}
-                      {option}{" "}
+                      {option}
                     </div>
                   );
                 })}
