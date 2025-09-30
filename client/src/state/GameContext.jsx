@@ -13,8 +13,12 @@ export function GameProvider({ children }) {
   const [availableQuestions, setAvailableQuestions] = useState(null);
 
   useEffect(() => {
-    const host = window.location.hostname; // localhost on PC, LAN IP on phone
-    const s = io(`http://${host}:4000`, { autoConnect: true });
+    const BACKEND_URL =
+    process.env.NODE_ENV === "production"
+        ? "https://triviaraid-production.up.railway.app" // replace with your Railway backend URL
+        : "http://localhost:4000";
+
+    const s = io(BACKEND_URL, { autoConnect: true });
 
     setSocket(s);
 
