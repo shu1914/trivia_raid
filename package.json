@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "install-all": "(cd client && npm install) && (cd server && npm install)",
+    "heroku-postbuild": "cd client && npm install && npm run build",
     "dev": "concurrently \"node server/index.js\" \"cd client && npm run dev -- --host 0.0.0.0\"",
-    "start-server": "node server/index.js",
-    "client": "cd client && npm run dev"
+    "start": "node server/index.js",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

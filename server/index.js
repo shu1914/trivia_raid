@@ -604,6 +604,20 @@ io.on("connection", (socket) => {
 });
 
 // ----------------------
+// Serve React build (Vite)
+// ----------------------
+const clientBuildPath = path.join(__dirname, "../client/dist");
+
+if (fs.existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+
+  // Fallback: send index.html for all non-API routes
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(clientBuildPath, "index.html"));
+  });
+}
+
+// ----------------------
 // Server Start
 // ----------------------
 const PORT = process.env.PORT || 4000;
